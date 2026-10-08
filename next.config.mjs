@@ -1,1 +1,1 @@
-export default { experimental: { serverComponentsExternalPackages: ["@electric-sql/pglite", "postgres"] } };
+export default { experimental: { serverComponentsExternalPackages: ["@electric-sql/pglite", "postgres", "sharp"] } };

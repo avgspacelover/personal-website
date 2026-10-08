@@ -1,4 +1,4 @@
-import { boolean, integer, jsonb, pgEnum, pgTable, primaryKey, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export const status = pgEnum("status", ["draft", "published", "archived"]);
 export const kind = pgEnum("entry_kind", ["projects", "experience"]);
@@ -37,3 +37,11 @@ export const education = pgTable("education", {
   id: id(), institution: text("institution").notNull(), program: text("program").notNull().default(""), period: text("period").notNull().default(""), position: integer("position").notNull().default(0),
 });
 
+
+// Uploaded images. `key` is the storage key of the original; resized WebP variants are `<base>-<width>.webp`.
+export const mediaAsset = pgTable("media_asset", {
+  id: id(), key: text("key").notNull().unique(), name: text("name").notNull().default(""), mime: text("mime").notNull(),
+  bytes: integer("bytes").notNull(), width: integer("width").notNull(), height: integer("height").notNull(),
+  alt: text("alt").notNull().default(""), variants: integer("variants").array().notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
