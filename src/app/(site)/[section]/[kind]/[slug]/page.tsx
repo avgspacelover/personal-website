@@ -3,10 +3,17 @@ import { entryHref } from "@/lib/content";
 import { getEntry, getVocations } from "@/lib/queries";
 import { redirectFor } from "@/lib/redirects";
 import { RichText } from "@/components/RichText";
+import { mediaKeysIn, toDoc } from "@/lib/richtext";
+import { mediaUrl } from "@/lib/storage";
 type P = { params: { section: string; kind: string; slug: string } };
 export const dynamic = "force-dynamic";
 // Canonical route only: /<primary-vocation>/<kind>/<slug>. Other vocation pages link here.
-export async function generateMetadata({ params }: P) { return { title: (await getEntry(params.kind, params.slug))?.title }; }
+export async function generateMetadata({ params }: P) {
+  const e = await getEntry(params.kind, params.slug);
+  if (!e) return {};
+  const path = entryHref(e), img = mediaKeysIn(toDoc(e.body))[0];
+  return { title: e.title, description: e.summary, alternates: { canonical: path }, openGraph: { type: "article" as const, title: e.title, description: e.summary, url: path, images: img ? [mediaUrl(img)] : undefined } };
+}
 export default async function Detail({ params }: P) {
   const e = await getEntry(params.kind, params.slug);
   const names = new Map((await getVocations()).map((v) => [v.slug, v.name]));
@@ -14,7 +21,9 @@ export default async function Detail({ params }: P) {
   const path = `/${params.section}/${params.kind}/${params.slug}`;
   if (!e) { const to = await redirectFor(path); if (to) permanentRedirect(to); notFound(); }
   if (entryHref(e) !== path) permanentRedirect(entryHref(e)); // same record reached via a non-primary vocation
+  const ld = { "@context": "https://schema.org", "@type": "CreativeWork", name: e.title, description: e.summary, dateModified: e.updated?.toISOString(), keywords: e.tech.join(", ") };
   return (<article>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
     <p className="mono" style={{ marginTop: "2rem" }}>{e.kind === "projects" ? "PROJECT" : "EXPERIENCE"} / {e.slug.toUpperCase()}</p>
     <h1 style={{ marginTop: ".5rem" }}>{e.title}</h1>
     <p className="lede">{e.summary}</p>

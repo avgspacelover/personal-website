@@ -14,6 +14,11 @@ Next.js 14 (App Router) + TypeScript. Static-rendered public site: vocations, Ex
 
 Auth.js handles OAuth; the session is an encrypted HttpOnly JWT cookie (3 days). Only verified Google accounts listed in `ADMIN_EMAILS` get in, and the allowlist is re-checked on every request, so removing an email revokes access at once. Sign-out clears the cookie but a copied JWT stays valid until expiry unless the email is removed from the allowlist or `AUTH_SECRET` is rotated. No password endpoint exists, so there is nothing to rate-limit locally. Every admin page and server action must call `requireAdmin()` itself; layouts are not a security boundary. Server actions get Next's built-in Origin check.
 
+## Search, export, SEO
+- Search: every term must match; fields are weighted (title > organization/creator/tags/tech > summary/notes > body text). It runs in memory over published records, which is fine at personal scale; switch to Postgres full-text if the archive grows large. Library tags link to a search for that tag.
+- Export: `/api/admin/export` (admin download) or `npm run export -- backups/archive.json` (cron-friendly). Contains vocations, records with their vocation links, library, media metadata, skills, education and redirects, with rich text as JSON. **Media files are not inside the JSON: back up `MEDIA_DIR` (or the bucket) alongside it, plus a `pg_dump` for full-fidelity database backups.** There is no import yet.
+- SEO: canonical URLs, Open Graph (first body image used as the share image), JSON-LD on record pages, sitemap with `lastmod`, RSS with `pubDate`, robots (blocks `/admin`, `/api`, `/search`). The footer date is the latest published update.
+
 ## Media storage
 Migration guide to S3/Cloudflare R2: `src/lib/storage/README.md`.
 
@@ -24,7 +29,7 @@ Storage sits behind the `MediaStorage` interface (`src/lib/storage/index.ts`: `p
 ## Status vs. spec
 Built: public site, IA, routes, theme without flash, radial nav, visual system, Postgres schema (`db/schema.sql`).
 Also built (increment 2): /about, /resume (derived view), sitemap, robots, RSS at /feed.xml, 404. Set SITE_URL in production.
-Also built: Google-only admin auth, `/admin` dashboard, vocation CRUD (`/admin/vocations`), project/experience CRUD (`/admin/entries`), media library (`/admin/media`), Tiptap rich-text editor for record bodies, permanent redirects for renamed slugs/vocations, library editors for Essays/Books/Movies/Community (`/admin/library`).
+Also built: Google-only admin auth, `/admin` dashboard, vocation CRUD (`/admin/vocations`), project/experience CRUD (`/admin/entries`), media library (`/admin/media`), Tiptap rich-text editor for record bodies, permanent redirects for renamed slugs/vocations, library editors for Essays/Books/Movies/Community (`/admin/library`), public search (`/search`) and admin search (`/admin/search`, includes drafts), JSON export, SEO metadata.
 Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, search, export. Content now lives in the database; `src/lib/content.ts` is only the seed source (`npm run db:seed` resets the DB to it).
 
 ## Decisions
@@ -40,4 +45,4 @@ Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, se
 - Vocation slugs share the `/[section]` namespace with library collections; the CMS must reject colliding slugs.
 
 ## Next
-1. Search (public + admin), JSON export, sitemap/OG polish. 2. Resume builder + PDF. 3. Agent behind a server service.
+1. Resume builder + PDF. 2. Agent behind a server service. 3. Polish: breakpoint review at 375/768/1024/1440, contrast audit, import from export.
