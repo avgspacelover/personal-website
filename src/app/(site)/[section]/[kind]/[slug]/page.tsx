@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { entryHref } from "@/lib/content";
 import { getEntry, getVocations } from "@/lib/queries";
+import { redirectFor } from "@/lib/redirects";
 import { RichText } from "@/components/RichText";
 type P = { params: { section: string; kind: string; slug: string } };
 export const dynamic = "force-dynamic";
@@ -10,7 +11,9 @@ export default async function Detail({ params }: P) {
   const e = await getEntry(params.kind, params.slug);
   const names = new Map((await getVocations()).map((v) => [v.slug, v.name]));
   const vocName = (s: string) => names.get(s) ?? s;
-  if (!e || entryHref(e) !== `/${params.section}/${params.kind}/${params.slug}`) notFound();
+  const path = `/${params.section}/${params.kind}/${params.slug}`;
+  if (!e) { const to = await redirectFor(path); if (to) permanentRedirect(to); notFound(); }
+  if (entryHref(e) !== path) permanentRedirect(entryHref(e)); // same record reached via a non-primary vocation
   return (<article>
     <p className="mono" style={{ marginTop: "2rem" }}>{e.kind === "projects" ? "PROJECT" : "EXPERIENCE"} / {e.slug.toUpperCase()}</p>
     <h1 style={{ marginTop: ".5rem" }}>{e.title}</h1>

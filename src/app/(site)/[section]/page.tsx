@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { redirectFor } from "@/lib/redirects";
 import { collections, entryHref } from "@/lib/content";
 import { getVocations, getEntries, getLibrary } from "@/lib/queries";
 type P = { params: { section: string } };
@@ -19,7 +20,7 @@ export default async function Section({ params }: P) {
     </>);
   }
   const c = collections.find((x) => x.slug === params.section);
-  if (!c) notFound();
+  if (!c) { const to = await redirectFor(`/${params.section}`); if (to) permanentRedirect(to); notFound(); }
   return (<>
     <h1>{c.name}</h1><p className="lede">Personal recommendations, independent of the professional archive.</p>
     <section className="blk"><h2>Entries</h2><ul className="rows">

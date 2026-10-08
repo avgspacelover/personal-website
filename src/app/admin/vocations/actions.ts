@@ -1,7 +1,8 @@
 "use server";
 import { redirect } from "next/navigation";
 import { and, eq, ne } from "drizzle-orm";
-import { getDb, vocation } from "@/db";
+import { getDb, entry, vocation, vocationEntry, type DB } from "@/db";
+import { addRedirects } from "@/lib/redirects";
 import { requireAdmin } from "@/lib/auth";
 import { UUID, slugError, slugify } from "@/lib/slug";
 
@@ -24,8 +25,18 @@ export async function saveVocation(fd: FormData) {
   const db = await getDb();
   const clash = await db.select({ id: vocation.id }).from(vocation).where(and(eq(vocation.slug, slug), id ? ne(vocation.id, id) : undefined)).limit(1);
   if (clash.length) back("taken");
-  if (id) await db.update(vocation).set({ name, slug, intro, position, status }).where(eq(vocation.id, id));
-  else await db.insert(vocation).values({ name, slug, intro, position, status });
+  if (id) {
+    const [old] = await db.select({ slug: vocation.slug, status: vocation.status }).from(vocation).where(eq(vocation.id, id)).limit(1);
+    if (!old) redirect("/admin/vocations");
+    await db.transaction(async (tx) => {
+      await tx.update(vocation).set({ name, slug, intro, position, status }).where(eq(vocation.id, id));
+      if (old.status === "published" && old.slug !== slug) {
+        // The vocation page and every record whose primary vocation this is change URL together.
+        const owned = await tx.select({ kind: entry.kind, slug: entry.slug }).from(vocationEntry).innerJoin(entry, eq(entry.id, vocationEntry.entryId)).where(and(eq(vocationEntry.vocationId, id), eq(vocationEntry.isPrimary, true)));
+        await addRedirects(tx as unknown as DB, [[`/${old.slug}`, `/${slug}`], ...owned.map((e): [string, string] => [`/${old.slug}/${e.kind}/${e.slug}`, `/${slug}/${e.kind}/${e.slug}`])]);
+      }
+    });
+  } else await db.insert(vocation).values({ name, slug, intro, position, status });
   redirect("/admin/vocations");
 }
 

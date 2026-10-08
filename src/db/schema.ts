@@ -45,3 +45,9 @@ export const mediaAsset = pgTable("media_asset", {
   alt: text("alt").notNull().default(""), variants: integer("variants").array().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// Old public paths that should permanently redirect (308) to the current path.
+export const redirectRule = pgTable("redirect_rule", {
+  id: id(), fromPath: text("from_path").notNull().unique(), toPath: text("to_path").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
