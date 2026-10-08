@@ -24,11 +24,12 @@ Storage sits behind the `MediaStorage` interface (`src/lib/storage/index.ts`: `p
 ## Status vs. spec
 Built: public site, IA, routes, theme without flash, radial nav, visual system, Postgres schema (`db/schema.sql`).
 Also built (increment 2): /about, /resume (derived view), sitemap, robots, RSS at /feed.xml, 404. Set SITE_URL in production.
-Also built: Google-only admin auth, `/admin` dashboard, vocation CRUD (`/admin/vocations`), project/experience CRUD (`/admin/entries`), media library (`/admin/media`), Tiptap rich-text editor for record bodies, permanent redirects for renamed slugs/vocations.
+Also built: Google-only admin auth, `/admin` dashboard, vocation CRUD (`/admin/vocations`), project/experience CRUD (`/admin/entries`), media library (`/admin/media`), Tiptap rich-text editor for record bodies, permanent redirects for renamed slugs/vocations, library editors for Essays/Books/Movies/Community (`/admin/library`).
 Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, search, export. Content now lives in the database; `src/lib/content.ts` is only the seed source (`npm run db:seed` resets the DB to it).
 
 ## Decisions
-- Redirects: renaming a published record's slug, changing its primary vocation, or renaming a published vocation stores old -> new paths (`redirect_rule`) and answers 308. Chains are collapsed, a path that becomes live again stops redirecting, and a non-primary vocation URL redirects to the canonical one. Drafts create no redirects. Deleting a record or vocation does not clean up redirects pointing at it (they end in a 404).
+- Library items share one table (`library_item`) with per-collection field labels (`src/lib/library.ts`). Library links must be http(s)/mailto (checked on save and again on read). Book covers and movie posters are picked from the media library; deleting an image used as a cover or in a body is blocked.
+- Redirects: renaming a published record's slug, changing its primary vocation, or renaming a published vocation stores old -> new paths (`redirect_rule`) and answers 308. Chains are collapsed, a path that becomes live again stops redirecting, and a non-primary vocation URL redirects to the canonical one. Drafts create no redirects. Deleting a record or vocation removes the redirects that pointed at it, so those old URLs return a plain 404.
 - Experience and Project share one `entry` table (kind column) instead of two. Same fields and CRUD; one canonical record each. `db/spec-schema.sql` is the original full-spec reference.
 - Pages are `force-dynamic` for now. Static/ISR with `revalidatePath` on CMS save comes with the CMS.
 - `entry.body` is whitelisted Tiptap/ProseMirror JSON (`src/lib/richtext.ts`), sanitized on save and again on render; the public page renders it with a React renderer (no raw HTML). Old string-array bodies are converted on read. Images reference media by key; alt text and responsive `srcset` come from the media library at render time. Deleting an image used in a body is blocked.
@@ -39,4 +40,4 @@ Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, se
 - Vocation slugs share the `/[section]` namespace with library collections; the CMS must reject colliding slugs.
 
 ## Next
-1. Library editors, search, export. 2. Resume builder + PDF. 3. Agent behind a server service.
+1. Search (public + admin), JSON export, sitemap/OG polish. 2. Resume builder + PDF. 3. Agent behind a server service.

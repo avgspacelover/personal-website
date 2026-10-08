@@ -1,5 +1,6 @@
-import { and, asc, desc, eq } from "drizzle-orm";
-import { getDb, vocation, entry, vocationEntry, libraryItem, skill, education } from "../db";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { getDb, vocation, entry, vocationEntry, libraryItem, mediaAsset, skill, education } from "../db";
+import { mediaUrl, variantKeys } from "./storage";
 import type { Entry, LibraryItem, Vocation } from "./content";
 
 export async function getVocations(): Promise<Vocation[]> {
@@ -28,7 +29,14 @@ export async function getEntry(kind: string, slug: string) {
 export async function getLibrary(collection: string): Promise<LibraryItem[]> {
   const db = await getDb();
   const rows = await db.select().from(libraryItem).where(and(eq(libraryItem.collection, collection), eq(libraryItem.status, "published"))).orderBy(asc(libraryItem.position));
-  return rows.map((r) => ({ title: r.title, by: r.creator, note: r.notes, rating: r.rating, year: r.year ?? undefined, url: r.url ?? undefined }));
+  const keys = rows.flatMap((r) => (r.image ? [r.image] : []));
+  const assets = new Map((keys.length ? await db.select().from(mediaAsset).where(inArray(mediaAsset.key, keys)) : []).map((a) => [a.key, a]));
+  return rows.map((r): LibraryItem => {
+    const a = r.image ? assets.get(r.image) : undefined;
+    return { title: r.title, by: r.creator, note: r.notes, rating: r.rating, year: r.year ?? undefined, tags: r.tags,
+      url: r.url && /^(https?:\/\/|mailto:)/i.test(r.url) ? r.url : undefined, // never render other schemes as links
+      image: a ? { url: mediaUrl(a.variants.includes(480) ? variantKeys(a.key, [480])[0] : a.key), alt: a.alt } : undefined };
+  });
 }
 
 export async function getSkills() {

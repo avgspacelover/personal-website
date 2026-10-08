@@ -5,7 +5,7 @@ import { getDb, entry, vocation, vocationEntry, type DB } from "@/db";
 import { requireAdmin } from "@/lib/auth";
 import { UUID, slugify } from "@/lib/slug";
 import { parseBody } from "@/lib/richtext";
-import { addRedirects } from "@/lib/redirects";
+import { addRedirects, removeRedirectsTo } from "@/lib/redirects";
 
 const STATUS = ["draft", "published", "archived"] as const;
 const KINDS = ["projects", "experience"] as const;
@@ -58,6 +58,12 @@ export async function deleteEntry(fd: FormData) {
   const id = str(fd, "id");
   if (!UUID.test(id)) redirect("/admin/entries");
   if (fd.get("confirm") !== "on") redirect(`/admin/entries/${id}?error=confirm`);
-  await (await getDb()).delete(entry).where(eq(entry.id, id));
+  const db = await getDb();
+  const [e] = await db.select({ kind: entry.kind, slug: entry.slug }).from(entry).where(eq(entry.id, id)).limit(1);
+  const [p] = await db.select({ slug: vocation.slug }).from(vocationEntry).innerJoin(vocation, eq(vocation.id, vocationEntry.vocationId)).where(and(eq(vocationEntry.entryId, id), eq(vocationEntry.isPrimary, true))).limit(1);
+  await db.transaction(async (tx) => {
+    await tx.delete(entry).where(eq(entry.id, id));
+    if (e && p) await removeRedirectsTo(tx as unknown as DB, `/${p.slug}/${e.kind}/${e.slug}`);
+  });
   redirect("/admin/entries");
 }

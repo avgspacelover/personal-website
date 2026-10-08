@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { and, eq, ne } from "drizzle-orm";
 import { getDb, entry, vocation, vocationEntry, type DB } from "@/db";
-import { addRedirects } from "@/lib/redirects";
+import { addRedirects, removeRedirectsTo } from "@/lib/redirects";
 import { requireAdmin } from "@/lib/auth";
 import { UUID, slugError, slugify } from "@/lib/slug";
 
@@ -45,6 +45,11 @@ export async function deleteVocation(fd: FormData) {
   const id = str(fd, "id");
   if (!UUID.test(id)) redirect("/admin/vocations");
   if (fd.get("confirm") !== "on") redirect(`/admin/vocations/${id}?error=confirm`);
-  await (await getDb()).delete(vocation).where(eq(vocation.id, id));
+  const db = await getDb();
+  const [v] = await db.select({ slug: vocation.slug }).from(vocation).where(eq(vocation.id, id)).limit(1);
+  await db.transaction(async (tx) => {
+    await tx.delete(vocation).where(eq(vocation.id, id));
+    if (v) await removeRedirectsTo(tx as unknown as DB, `/${v.slug}`, true);
+  });
   redirect("/admin/vocations");
 }

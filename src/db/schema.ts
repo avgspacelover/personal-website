@@ -27,6 +27,7 @@ export const vocationEntry = pgTable("vocation_entry", {
 export const libraryItem = pgTable("library_item", {
   id: id(), collection: text("collection").notNull(), title: text("title").notNull(), creator: text("creator").notNull().default(""),
   url: text("url"), year: text("year"), rating: text("rating").notNull().default(""), notes: text("notes").notNull().default(""),
+  tags: text("tags").array().notNull().default([]), image: text("image").references(() => mediaAsset.key, { onDelete: "set null" }),
   position: integer("position").notNull().default(0), status: status("status").notNull().default("draft"),
 });
 

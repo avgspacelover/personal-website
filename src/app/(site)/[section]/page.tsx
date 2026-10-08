@@ -24,7 +24,7 @@ export default async function Section({ params }: P) {
   return (<>
     <h1>{c.name}</h1><p className="lede">Personal recommendations, independent of the professional archive.</p>
     <section className="blk"><h2>Entries</h2><ul className="rows">
-      {(await getLibrary(c.slug)).map((i) => <li key={i.title}><span className="mono">{i.year ?? "n/a"}</span><span>{i.url ? <a href={i.url}>{i.title}</a> : i.title}, {i.by}</span><span className="mono">{i.rating}</span><p>{i.note}</p></li>)}
+      {(await getLibrary(c.slug)).map((i) => <li key={i.title}><span className="mono">{i.year ?? "n/a"}</span><span>{i.image && <img src={i.image.url} alt={i.image.alt} width={48} loading="lazy" style={{ display: "block", marginBottom: ".4rem" }} />}{i.url ? <a href={i.url}>{i.title}</a> : i.title}{i.by ? `, ${i.by}` : ""}</span><span className="mono">{i.rating}</span><p>{i.note}{i.tags?.length ? <span className="mono"> / {i.tags.join(" / ")}</span> : null}</p></li>)}
     </ul></section>
   </>);
 }
