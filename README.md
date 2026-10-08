@@ -31,4 +31,4 @@ Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, se
 - Vocation slugs share the `/[section]` namespace with library collections; the CMS must reject colliding slugs.
 
 ## Next
-1. Auth.js + `/admin`. 3. Tiptap. 4. Resume + PDF. 5. Agent behind a server service.
+1. Redirects for changed slugs / primary vocation. 2. Tiptap + media uploads. 3. Library editors, search, export. 4. Resume builder + PDF. 5. Agent behind a server service.
