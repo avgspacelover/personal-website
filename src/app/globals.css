@@ -49,3 +49,4 @@ form.login input{font:inherit;background:var(--surface);color:var(--fg);border:1
 form.login input:focus-visible{border-color:var(--accent)}
 .err{margin:0;color:var(--fg);border-left:2px solid var(--accent);padding-left:.6rem;font-size:.9rem}
 .tbtn.big{padding:.7rem 1rem;min-height:44px;justify-self:start}
+form.edit{max-width:34rem}form.edit textarea,form.edit select{font:inherit;background:var(--surface);color:var(--fg);border:1px solid var(--rule);border-radius:2px;padding:.6rem .7rem;width:100%}form.edit label{margin-top:.4rem}

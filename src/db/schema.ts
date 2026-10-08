@@ -1,4 +1,4 @@
-import { boolean, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgEnum, pgTable, primaryKey, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export const status = pgEnum("status", ["draft", "published", "archived"]);
 export const kind = pgEnum("entry_kind", ["projects", "experience"]);
@@ -37,8 +37,3 @@ export const education = pgTable("education", {
   id: id(), institution: text("institution").notNull(), program: text("program").notNull().default(""), period: text("period").notNull().default(""), position: integer("position").notNull().default(0),
 });
 
-// Admin sessions. Only a SHA-256 of the cookie token is stored; deleting the row invalidates the session.
-export const session = pgTable("session", {
-  id: id(), tokenHash: text("token_hash").notNull().unique(),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
