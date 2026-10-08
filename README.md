@@ -38,4 +38,4 @@ Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, se
 - Vocation slugs share the `/[section]` namespace with library collections; the CMS must reject colliding slugs.
 
 ## Next
-1. Redirects for changed slugs / primary vocation. 2. Library editors, search, export. 4. Resume builder + PDF. 5. Agent behind a server service.
+1. Redirects for changed slugs / primary vocation. 2. Library editors, search, export. 3. Resume builder + PDF. 4. Agent behind a server service.
