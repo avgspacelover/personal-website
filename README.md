@@ -7,7 +7,8 @@ Next.js 14 (App Router) + TypeScript. Static-rendered public site: vocations, Ex
 
 ## Status vs. spec
 Built: public site, IA, routes, theme without flash, radial nav, visual system, Postgres schema (`db/schema.sql`).
-Not built: CMS + auth, WYSIWYG, media uploads, resume builder/PDF, AI agent, search, RSS/sitemap, export. Content is seeded in `src/lib/content.ts`.
+Also built (increment 2): /about, /resume (derived view), sitemap, robots, RSS at /feed.xml, 404. Set SITE_URL in production.
+Not built: CMS + auth, WYSIWYG, media uploads, resume builder/PDF, AI agent, search, export. Content is seeded in `src/lib/content.ts`.
 
 ## Decisions
 - Canonical URL per record: `/<primary-vocation>/<kind>/<slug>`; other vocation pages link to it (no duplicate pages).

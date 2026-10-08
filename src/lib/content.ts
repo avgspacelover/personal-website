@@ -34,3 +34,10 @@ export const inVocation = (slug: string) => entries.filter((e) => e.vocations.in
 export const vocName = (slug: string) => vocations.find((v) => v.slug === slug)?.name ?? slug;
 // One canonical URL per record: its first listed vocation.
 export const entryHref = (e: Entry) => `/${e.vocations[0]}/${e.kind}/${e.slug}`;
+
+export const skills = [
+  { category: "Languages", items: ["TypeScript", "Rust", "OCaml", "Python"] },
+  { category: "Systems", items: ["Postgres", "Raft", "Simulation testing"] },
+];
+export const education = [{ institution: "Placeholder University", program: "B.S. Computer Science", dates: "2019–2023" }];
+export const site = { url: process.env.SITE_URL ?? "http://localhost:3000", name: "Personal Archive" };
