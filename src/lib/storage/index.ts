@@ -18,3 +18,4 @@ export function getStorage(): MediaStorage {
 }
 // Single place that turns a key into a public URL. Point MEDIA_PUBLIC_BASE at a CDN/bucket URL later; the app route /media/<key> is the default.
 export const mediaUrl = (key: string) => (process.env.MEDIA_PUBLIC_BASE ? `${process.env.MEDIA_PUBLIC_BASE.replace(/\/$/, "")}/${key}` : `/media/${key}`);
+export const variantKeys = (key: string, widths: number[]) => widths.map((w) => `${key.replace(/\.\w+$/, "")}-${w}.webp`);

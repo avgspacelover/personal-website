@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { getDb, mediaAsset } from "../db";
-import { getStorage } from "./storage";
+import { getStorage, variantKeys } from "./storage";
 
 export const MAX_BYTES = 5 * 1024 * 1024;
 const WIDTHS = [480, 800, 1200, 1600];
 const EXT: Record<string, string> = { jpeg: "jpg", png: "png", webp: "webp" };
 export class MediaError extends Error { constructor(public status: number, message: string) { super(message); } }
 
-export const variantKeys = (key: string, widths: number[]) => widths.map((w) => `${key.replace(/\.\w+$/, "")}-${w}.webp`);
+export { variantKeys };
 
 // Validates by decoding (never trusts the client MIME), applies EXIF orientation, strips metadata (incl. GPS), stores original + WebP variants.
 export async function ingestImage(input: Buffer, name: string, alt: string) {

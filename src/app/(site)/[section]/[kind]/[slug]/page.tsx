@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { entryHref } from "@/lib/content";
 import { getEntry, getVocations } from "@/lib/queries";
+import { RichText } from "@/components/RichText";
 type P = { params: { section: string; kind: string; slug: string } };
 export const dynamic = "force-dynamic";
 // Canonical route only: /<primary-vocation>/<kind>/<slug>. Other vocation pages link here.
@@ -21,6 +22,6 @@ export default async function Detail({ params }: P) {
       <dt className="mono">TECHNOLOGY</dt><dd>{e.tech.join(", ")}</dd>
       <dt className="mono">STATUS</dt><dd>{e.status}</dd>
     </dl>
-    <div className="prose">{e.body.map((p, i) => <p key={i}>{p}</p>)}</div>
+    <div className="prose"><RichText body={e.body} /></div>
   </article>);
 }

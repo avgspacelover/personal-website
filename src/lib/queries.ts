@@ -16,7 +16,7 @@ export async function getEntries(opts: { vocation?: string; kind?: Entry["kind"]
     .orderBy(desc(vocationEntry.isPrimary), asc(vocationEntry.position));
   const out = rows.map((r): Entry => ({
     slug: r.slug, kind: r.kind, title: r.title, org: r.organization ?? undefined, summary: r.summary, year: r.period, status: r.phase, tech: r.tech,
-    body: Array.isArray(r.body) ? (r.body as string[]) : [], vocations: links.filter((l) => l.entryId === r.id).map((l) => l.slug),
+    body: r.body, vocations: links.filter((l) => l.entryId === r.id).map((l) => l.slug),
   }));
   return opts.vocation ? out.filter((e) => e.vocations.includes(opts.vocation!)) : out.filter((e) => e.vocations.length > 0);
 }

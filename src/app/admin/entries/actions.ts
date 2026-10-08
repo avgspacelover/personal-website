@@ -4,6 +4,7 @@ import { and, eq, inArray, ne } from "drizzle-orm";
 import { getDb, entry, vocation, vocationEntry } from "@/db";
 import { requireAdmin } from "@/lib/auth";
 import { UUID, slugify } from "@/lib/slug";
+import { parseBody } from "@/lib/richtext";
 
 const STATUS = ["draft", "published", "archived"] as const;
 const KINDS = ["projects", "experience"] as const;
@@ -24,6 +25,8 @@ export async function saveEntry(fd: FormData) {
   if (!slug) back("slug");
   const clash = await db.select({ id: entry.id }).from(entry).where(and(eq(entry.kind, kind), eq(entry.slug, slug), id ? ne(entry.id, id) : undefined)).limit(1);
   if (clash.length) back("taken");
+  const body = parseBody(str(fd, "body"));
+  if (!body) back("body");
 
   const wanted = fd.getAll("vocations").map(String).filter((v) => UUID.test(v));
   const valid = wanted.length ? (await db.select({ id: vocation.id }).from(vocation).where(inArray(vocation.id, wanted))).map((r) => r.id) : [];
@@ -31,7 +34,7 @@ export async function saveEntry(fd: FormData) {
   const values = {
     title, slug, organization: str(fd, "organization") || null, summary: str(fd, "summary"), period: str(fd, "period"), phase: str(fd, "phase"),
     tech: str(fd, "tech").split(",").map((s) => s.trim()).filter(Boolean),
-    body: str(fd, "body").split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean),
+    body,
     position: Number.parseInt(str(fd, "position"), 10) || 0, featured: fd.get("featured") === "on",
     status: STATUS.find((s) => s === fd.get("status")) ?? "draft",
   };

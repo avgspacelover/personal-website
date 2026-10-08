@@ -1,6 +1,6 @@
 // Seed content. Replace with DB queries once the CMS lands (see db/schema.sql).
 export type Vocation = { slug: string; name: string; intro: string };
-export type Entry = { slug: string; kind: "projects" | "experience"; title: string; org?: string; summary: string; year: string; status: string; tech: string[]; vocations: string[]; body: string[] };
+export type Entry = { slug: string; kind: "projects" | "experience"; title: string; org?: string; summary: string; year: string; status: string; tech: string[]; vocations: string[]; body: unknown };
 export type LibraryItem = { title: string; by: string; note: string; rating: string; year?: string; url?: string };
 
 export const vocations: Vocation[] = [

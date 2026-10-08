@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { asc, eq } from "drizzle-orm";
-import { getDb, entry, vocation, vocationEntry } from "@/db";
+import { asc, desc, eq } from "drizzle-orm";
+import { getDb, entry, mediaAsset, vocation, vocationEntry } from "@/db";
+import { RichEditor } from "@/components/RichEditor";
+import { toDoc } from "@/lib/richtext";
+import { mediaUrl, variantKeys } from "@/lib/storage";
 import { requireAdmin } from "@/lib/auth";
 import { UUID } from "@/lib/slug";
 import { deleteEntry, saveEntry } from "../actions";
-const msg: Record<string, string> = { title: "Title is required.", slug: "Slug could not be derived; enter one.", taken: "Another record of this type already uses that slug.", confirm: "Tick the confirmation box to delete." };
+const msg: Record<string, string> = { title: "Title is required.", slug: "Slug could not be derived; enter one.", taken: "Another record of this type already uses that slug.", confirm: "Tick the confirmation box to delete.", body: "Body could not be read; reload and try again." };
 type P = { params: { id: string }; searchParams: { error?: string; kind?: string } };
 export default async function EditEntry({ params, searchParams }: P) {
   await requireAdmin();
@@ -13,12 +16,13 @@ export default async function EditEntry({ params, searchParams }: P) {
   const isNew = params.id === "new";
   const e = isNew || !UUID.test(params.id) ? null : (await db.select().from(entry).where(eq(entry.id, params.id)).limit(1))[0];
   if (!isNew && !e) notFound();
-  const [vocs, links] = await Promise.all([
+  const [vocs, links, assets] = await Promise.all([
     db.select().from(vocation).orderBy(asc(vocation.position), asc(vocation.name)),
     e ? db.select().from(vocationEntry).where(eq(vocationEntry.entryId, e.id)) : Promise.resolve([]),
+    db.select().from(mediaAsset).orderBy(desc(mediaAsset.createdAt)).limit(60),
   ]);
+  const media = assets.map((a) => ({ url: mediaUrl(a.key), thumb: mediaUrl(a.variants.includes(480) ? variantKeys(a.key, [480])[0] : a.key), alt: a.alt }));
   const kind = e?.kind ?? (searchParams.kind === "experience" ? "experience" : "projects");
-  const body = Array.isArray(e?.body) ? (e!.body as string[]).join("\n\n") : "";
   return (<>
     <p className="mono" style={{ marginTop: "2rem" }}><Link href="/admin/entries">RECORDS</Link> / {kind.toUpperCase()} / {isNew ? "NEW" : e!.slug.toUpperCase()}</p>
     <h1 style={{ marginTop: ".5rem" }}>{isNew ? `New ${kind === "projects" ? "project" : "experience"}` : e!.title}</h1>
@@ -32,7 +36,7 @@ export default async function EditEntry({ params, searchParams }: P) {
       <label className="mono" htmlFor="period">PERIOD (E.G. 2023–2025)</label><input id="period" name="period" defaultValue={e?.period} />
       <label className="mono" htmlFor="phase">PHASE (E.G. ACTIVE)</label><input id="phase" name="phase" defaultValue={e?.phase} />
       <label className="mono" htmlFor="tech">TECHNOLOGY (COMMA-SEPARATED)</label><input id="tech" name="tech" defaultValue={e?.tech.join(", ")} />
-      <label className="mono" htmlFor="body">BODY (BLANK LINE BETWEEN PARAGRAPHS; RICH EDITOR LATER)</label><textarea id="body" name="body" rows={10} defaultValue={body} />
+      <span className="mono">BODY</span><RichEditor name="body" initial={toDoc(e?.body ?? [])} media={media} />
       <fieldset style={{ border: "1px solid var(--rule)", borderRadius: 2, padding: ".75rem" }}>
         <legend className="mono">VOCATIONS</legend>
         {vocs.map((v) => { const l = links.find((x) => x.vocationId === v.id); return (
