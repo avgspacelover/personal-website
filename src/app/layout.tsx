@@ -5,11 +5,15 @@ import "@fontsource/hanken-grotesk/600.css";
 import "@fontsource/ibm-plex-mono/400.css";
 import { ThemeToggle } from "@/components/Theme";
 import { Radial } from "@/components/Radial";
-import { vocations, collections, site } from "@/lib/content";
+import { collections, site } from "@/lib/content";
+import { getVocations } from "@/lib/queries";
 import "./globals.css";
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { metadataBase: new URL(site.url), alternates: { types: { "application/rss+xml": "/feed.xml" } }, title: { default: "Personal Archive", template: "%s / Personal Archive" }, description: "Professional work by vocation, and a separate personal library." };
 const themeInit = `try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}`;
-export default function Root({ children }: { children: React.ReactNode }) {
+export default async function Root({ children }: { children: React.ReactNode }) {
+  const vocations = await getVocations();
   const groups = {
     root: [{ label: "Work", group: "work" }, { label: "Library", group: "library" }, { label: "Resume", href: "/resume" }, { label: "About", href: "/about" }],
     work: vocations.map((v) => ({ label: v.name, href: `/${v.slug}` })),

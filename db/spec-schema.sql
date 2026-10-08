@@ -1,4 +1,4 @@
--- Postgres schema for the full spec. Not yet wired to the app (V1 core uses src/lib/content.ts).
+-- Reference only: the full-spec schema (resume tables, revisions, media). The live schema is src/db/schema.ts.
 create type status as enum ('draft','published','archived');
 create table vocation(id uuid primary key default gen_random_uuid(), name text not null, slug text unique not null, description text, intro text, position int default 0, status status default 'draft');
 create table experience(id uuid primary key default gen_random_uuid(), title text not null, slug text unique not null, organization text, role text, location text, starts date, ends date, summary text, body jsonb, position int default 0, featured bool default false, status status default 'draft');

@@ -1,8 +1,12 @@
 import Link from "next/link";
-import { entries, entryHref, skills, education, vocName } from "@/lib/content";
+import { entryHref } from "@/lib/content";
+import { getEntries, getSkills, getEducation, getVocations } from "@/lib/queries";
 export const metadata = { title: "Resume" };
 // Derived view: every item is read from canonical records, nothing is re-entered here.
-export default function Resume() {
+export const dynamic = "force-dynamic";
+export default async function Resume() {
+  const [entries, skills, education, vs] = await Promise.all([getEntries(), getSkills(), getEducation(), getVocations()]);
+  const vocName = (s: string) => vs.find((v) => v.slug === s)?.name ?? s;
   const exp = entries.filter((e) => e.kind === "experience");
   const proj = entries.filter((e) => e.kind === "projects");
   return (<>

@@ -1,12 +1,14 @@
 import { notFound } from "next/navigation";
-import { entries, vocName, entryHref } from "@/lib/content";
+import { entryHref } from "@/lib/content";
+import { getEntry, getVocations } from "@/lib/queries";
 type P = { params: { section: string; kind: string; slug: string } };
-export const dynamicParams = false;
+export const dynamic = "force-dynamic";
 // Canonical route only: /<primary-vocation>/<kind>/<slug>. Other vocation pages link here.
-export const generateStaticParams = () => entries.map((e) => ({ section: e.vocations[0], kind: e.kind, slug: e.slug }));
-export function generateMetadata({ params }: P) { return { title: entries.find((e) => e.slug === params.slug)?.title }; }
-export default function Detail({ params }: P) {
-  const e = entries.find((x) => x.slug === params.slug && x.kind === params.kind);
+export async function generateMetadata({ params }: P) { return { title: (await getEntry(params.kind, params.slug))?.title }; }
+export default async function Detail({ params }: P) {
+  const e = await getEntry(params.kind, params.slug);
+  const names = new Map((await getVocations()).map((v) => [v.slug, v.name]));
+  const vocName = (s: string) => names.get(s) ?? s;
   if (!e || entryHref(e) !== `/${params.section}/${params.kind}/${params.slug}`) notFound();
   return (<article>
     <p className="mono" style={{ marginTop: "2rem" }}>{e.kind === "projects" ? "PROJECT" : "EXPERIENCE"} / {e.slug.toUpperCase()}</p>

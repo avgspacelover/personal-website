@@ -1,6 +1,11 @@
 import Link from "next/link";
-import { vocations, entries, entryHref, collections, inVocation } from "@/lib/content";
-export default function Home() {
+import { entryHref, collections } from "@/lib/content";
+import { getVocations, getEntries } from "@/lib/queries";
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const [vocations, entries, featured] = await Promise.all([getVocations(), getEntries(), getEntries({ featured: true })]);
+  const inVocation = (s: string) => entries.filter((e) => e.vocations.includes(s));
   return (<>
     <h1>Software, systems, and ideas, filed by discipline.</h1>
     <p className="lede">Professional work is organized by vocation. Essays, books, films, and communities live separately in the library.</p>
@@ -9,7 +14,7 @@ export default function Home() {
     </ul></section>
     <section className="blk"><h2>Currently</h2><p className="prose">Placeholder: edit this snapshot of what you are building, learning, and reading.</p></section>
     <section className="blk"><h2>Selected work</h2><ul className="rows">
-      {entries.slice(0, 3).map((e) => <li key={e.slug}><span className="mono">{e.year}</span><Link href={entryHref(e)}>{e.title}</Link><span className="mono">{e.status}</span><p>{e.summary}</p></li>)}
+      {featured.map((e) => <li key={e.slug}><span className="mono">{e.year}</span><Link href={entryHref(e)}>{e.title}</Link><span className="mono">{e.status}</span><p>{e.summary}</p></li>)}
     </ul></section>
     <section className="blk"><h2>Library</h2><ul className="rows">
       {collections.map((c) => <li key={c.slug}><span className="mono">LIB</span><Link href={`/${c.slug}`}>{c.name}</Link><span /></li>)}
