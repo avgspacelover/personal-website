@@ -17,7 +17,7 @@ Auth.js handles OAuth; the session is an encrypted HttpOnly JWT cookie (3 days).
 ## Status vs. spec
 Built: public site, IA, routes, theme without flash, radial nav, visual system, Postgres schema (`db/schema.sql`).
 Also built (increment 2): /about, /resume (derived view), sitemap, robots, RSS at /feed.xml, 404. Set SITE_URL in production.
-Also built: Google-only admin auth, `/admin` dashboard, vocation CRUD (`/admin/vocations`).
+Also built: Google-only admin auth, `/admin` dashboard, vocation CRUD (`/admin/vocations`), project/experience CRUD (`/admin/entries`).
 Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, search, export. Content now lives in the database; `src/lib/content.ts` is only the seed source (`npm run db:seed` resets the DB to it).
 
 ## Decisions

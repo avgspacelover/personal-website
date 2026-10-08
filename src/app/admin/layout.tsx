@@ -10,7 +10,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <header className="top"><div className="wrap">
       <Link href="/admin" className="brand">Admin</Link>
       <span className="bar">
-        {authed && <Link href="/admin/vocations" className="mono">VOCATIONS</Link>}
+        {authed && <><Link href="/admin/vocations" className="mono">VOCATIONS</Link><Link href="/admin/entries" className="mono">RECORDS</Link></>}
         <Link href="/" className="mono">VIEW SITE</Link>
         {authed && <form action={async () => { "use server"; await signOut({ redirectTo: "/admin/login" }); }}><button className="tbtn">SIGN OUT</button></form>}
         <ThemeToggle />
