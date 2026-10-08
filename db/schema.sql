@@ -1,0 +1,15 @@
+-- Postgres schema for the full spec. Not yet wired to the app (V1 core uses src/lib/content.ts).
+create type status as enum ('draft','published','archived');
+create table vocation(id uuid primary key default gen_random_uuid(), name text not null, slug text unique not null, description text, intro text, position int default 0, status status default 'draft');
+create table experience(id uuid primary key default gen_random_uuid(), title text not null, slug text unique not null, organization text, role text, location text, starts date, ends date, summary text, body jsonb, position int default 0, featured bool default false, status status default 'draft');
+create table project(id uuid primary key default gen_random_uuid(), title text not null, slug text unique not null, summary text, body jsonb, starts date, ends date, links jsonb, tech text[], position int default 0, featured bool default false, status status default 'draft');
+create table vocation_experience(vocation_id uuid references vocation on delete cascade, experience_id uuid references experience on delete cascade, is_primary bool default false, position int default 0, primary key(vocation_id, experience_id));
+create table vocation_project(vocation_id uuid references vocation on delete cascade, project_id uuid references project on delete cascade, is_primary bool default false, position int default 0, primary key(vocation_id, project_id));
+create table skill(id uuid primary key default gen_random_uuid(), name text not null, category text, descriptor text, position int default 0, status status default 'draft');
+create table education(id uuid primary key default gen_random_uuid(), institution text not null, program text, starts date, ends date, details text, position int default 0, status status default 'draft');
+create table library_item(id uuid primary key default gen_random_uuid(), collection text not null check (collection in ('essay','book','movie','community')), title text not null, creator text, url text, year int, rating text, notes text, tags text[], position int default 0, status status default 'draft');
+create table media_asset(id uuid primary key default gen_random_uuid(), storage_key text not null, mime text not null, width int, height int, alt text, bytes int);
+create table resume(id uuid primary key default gen_random_uuid(), name text not null, template text default 'minimal', pages text default 'one', status status default 'draft');
+create table resume_item(id uuid primary key default gen_random_uuid(), resume_id uuid references resume on delete cascade, section text not null, position int default 0, experience_id uuid references experience, project_id uuid references project, skill_id uuid references skill, education_id uuid references education, bullets jsonb, proposed_by_agent bool default false, approved bool default false);
+create table revision(id uuid primary key default gen_random_uuid(), entity text, entity_id uuid, snapshot jsonb, created_at timestamptz default now());
+create table site_settings(key text primary key, value jsonb);
