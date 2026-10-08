@@ -43,3 +43,9 @@ footer{border-top:1px solid var(--rule);margin-top:4rem;padding:1.5rem 0 6rem}
 .radial.open .node{opacity:1;visibility:visible;transform:translate(var(--x),var(--y));transition:transform .16s,opacity .12s}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 @media print{header.top,footer,.radial{display:none}body{background:#fff;color:#000}section.blk{break-inside:avoid}}
+.bar{display:flex;gap:1rem;align-items:baseline}.bar form{margin:0}
+form.login{display:grid;gap:.5rem;max-width:20rem}
+form.login input{font:inherit;background:var(--surface);color:var(--fg);border:1px solid var(--rule);border-radius:2px;padding:.6rem .7rem;min-height:44px}
+form.login input:focus-visible{border-color:var(--accent)}
+.err{margin:0;color:var(--fg);border-left:2px solid var(--accent);padding-left:.6rem;font-size:.9rem}
+.tbtn.big{padding:.7rem 1rem;min-height:44px;justify-self:start}

@@ -7,10 +7,15 @@ Next.js 14 (App Router) + TypeScript. Static-rendered public site: vocations, Ex
 
 `setup` migrates and seeds. With no `DATABASE_URL`, an embedded Postgres (PGlite) is used under `.data/`. Set `DATABASE_URL` for real Postgres (same migrations in `drizzle/`). After editing `src/db/schema.ts` run `npm run db:generate`.
 
+## Admin
+1. `cp .env.example .env` 2. `npm run admin:hash -- "a 12+ char password"` and paste the output into `.env` 3. Sign in at `/admin`.
+Sessions are server-side (DB row, SHA-256 of the cookie token, 7 days), cookie is HttpOnly + SameSite=Strict (+ Secure in production). Login/logout POSTs require a matching Origin. Login is limited to 5 failures per IP per 15 minutes (in-memory, single instance). Every admin page and mutation must call `requireAdmin()` itself; layouts are not a security boundary.
+
 ## Status vs. spec
 Built: public site, IA, routes, theme without flash, radial nav, visual system, Postgres schema (`db/schema.sql`).
 Also built (increment 2): /about, /resume (derived view), sitemap, robots, RSS at /feed.xml, 404. Set SITE_URL in production.
-Not built: CMS + auth, WYSIWYG, media uploads, resume builder/PDF, AI agent, search, export. Content now lives in the database; `src/lib/content.ts` is only the seed source (`npm run db:seed` resets the DB to it).
+Also built (increment 4): admin auth + `/admin` dashboard shell.
+Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, search, export. Content now lives in the database; `src/lib/content.ts` is only the seed source (`npm run db:seed` resets the DB to it).
 
 ## Decisions
 - Experience and Project share one `entry` table (kind column) instead of two. Same fields and CRUD; one canonical record each. `db/spec-schema.sql` is the original full-spec reference.
