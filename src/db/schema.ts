@@ -53,3 +53,20 @@ export const redirectRule = pgTable("redirect_rule", {
   id: id(), fromPath: text("from_path").notNull().unique(), toPath: text("to_path").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// Resume versions are configurations over canonical records. Nothing here duplicates record content except optional resume-specific bullets.
+export const resume = pgTable("resume", {
+  id: id(), updatedAt: updatedAt(), name: text("name").notNull(), template: text("template").notNull().default("minimal"),
+  pages: text("pages").notNull().default("one"), fullName: text("full_name").notNull().default(""), contact: text("contact").notNull().default(""),
+  headline: text("headline").notNull().default(""), sections: text("sections").array().notNull().default(["experience", "projects", "skills", "education"]),
+  isPublic: boolean("is_public").notNull().default(false), status: status("status").notNull().default("draft"),
+});
+export const resumeItem = pgTable("resume_item", {
+  id: id(), resumeId: uuid("resume_id").notNull().references(() => resume.id, { onDelete: "cascade" }),
+  section: text("section").notNull(), position: integer("position").notNull().default(0),
+  entryId: uuid("entry_id").references(() => entry.id, { onDelete: "cascade" }),
+  skillId: uuid("skill_id").references(() => skill.id, { onDelete: "cascade" }),
+  educationId: uuid("education_id").references(() => education.id, { onDelete: "cascade" }),
+  bullets: text("bullets").array().notNull().default([]),
+  proposedByAgent: boolean("proposed_by_agent").notNull().default(false), approved: boolean("approved").notNull().default(true),
+});

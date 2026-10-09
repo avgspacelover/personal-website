@@ -25,6 +25,9 @@ Auth.js handles OAuth; the session is an encrypted HttpOnly JWT cookie (3 days).
 - Contrast: all text pairs pass WCAG AA in both themes (lowest: muted text on surface, 4.93:1). Decorative rules stay light; form controls and buttons use a separate `--control` border token (>= 3:1).
 - Not verified in a real browser here (no browser available in my sandbox): please spot-check 375/768/1024/1440 px, keyboard focus order and the editor.
 
+## Resumes
+A resume version (`resume` + `resume_item`) only references canonical records: you pick published Experience/Projects, Skills and Education, order them, choose section order/template/length, and optionally write version-specific bullets (blank = the record's own summary). `buildResume()` (`src/lib/resume.ts`) is the single model that the builder outline, the public page and the PDF all read. Draft/archived records and unapproved agent-proposed items are excluded, so unfinished content can never reach a resume. Deleting a record removes it from every resume.
+
 ## Media storage
 Migration guide to S3/Cloudflare R2: `src/lib/storage/README.md`.
 
@@ -35,7 +38,7 @@ Storage sits behind the `MediaStorage` interface (`src/lib/storage/index.ts`: `p
 ## Status vs. spec
 Built: public site, IA, routes, theme without flash, radial nav, visual system, Postgres schema (`db/schema.sql`).
 Also built (increment 2): /about, /resume (derived view), sitemap, robots, RSS at /feed.xml, 404. Set SITE_URL in production.
-Also built: Google-only admin auth, `/admin` dashboard, vocation CRUD (`/admin/vocations`), project/experience CRUD (`/admin/entries`), media library (`/admin/media`), Tiptap rich-text editor for record bodies, permanent redirects for renamed slugs/vocations, library editors for Essays/Books/Movies/Community (`/admin/library`), public search (`/search`) and admin search (`/admin/search`, includes drafts), JSON export, SEO metadata.
+Also built: Google-only admin auth, `/admin` dashboard, vocation CRUD (`/admin/vocations`), project/experience CRUD (`/admin/entries`), media library (`/admin/media`), Tiptap rich-text editor for record bodies, permanent redirects for renamed slugs/vocations, library editors for Essays/Books/Movies/Community (`/admin/library`), public search (`/search`) and admin search (`/admin/search`, includes drafts), JSON export, SEO metadata, resume builder (`/admin/resumes`).
 Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, search, export. Content now lives in the database; `src/lib/content.ts` is only the seed source (`npm run db:seed` resets the DB to it).
 
 ## Decisions
@@ -51,4 +54,4 @@ Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, se
 - Vocation slugs share the `/[section]` namespace with library collections; the CMS must reject colliding slugs.
 
 ## Next
-1. Resume builder + PDF. 2. Agent behind a server service. 3. Polish: breakpoint review at 375/768/1024/1440, contrast audit, import from export.
+1. PDF export (text-based, 3 templates) + public resume page from the chosen version. 2. Agent behind a server service (tools, source-grounded proposals, approval). 3. Import from export.
