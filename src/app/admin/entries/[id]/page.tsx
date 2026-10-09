@@ -37,7 +37,7 @@ export default async function EditEntry({ params, searchParams }: P) {
       <label className="mono" htmlFor="phase">PHASE (E.G. ACTIVE)</label><input id="phase" name="phase" defaultValue={e?.phase} />
       <label className="mono" htmlFor="tech">TECHNOLOGY (COMMA-SEPARATED)</label><input id="tech" name="tech" defaultValue={e?.tech.join(", ")} />
       <span className="mono">BODY</span><RichEditor name="body" initial={toDoc(e?.body ?? [])} media={media} />
-      <fieldset style={{ border: "1px solid var(--rule)", borderRadius: 2, padding: ".75rem" }}>
+      <fieldset style={{ border: "1px solid var(--control)", borderRadius: 2, padding: ".75rem" }}>
         <legend className="mono">VOCATIONS</legend>
         {vocs.map((v) => { const l = links.find((x) => x.vocationId === v.id); return (
           <div key={v.id} style={{ display: "flex", gap: "1rem", alignItems: "center", minHeight: 44 }}>

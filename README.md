@@ -19,6 +19,12 @@ Auth.js handles OAuth; the session is an encrypted HttpOnly JWT cookie (3 days).
 - Export: `/api/admin/export` (admin download) or `npm run export -- backups/archive.json` (cron-friendly). Contains vocations, records with their vocation links, library, media metadata, skills, education and redirects, with rich text as JSON. **Media files are not inside the JSON: back up `MEDIA_DIR` (or the bucket) alongside it, plus a `pg_dump` for full-fidelity database backups.** There is no import yet.
 - SEO: canonical URLs, Open Graph (first body image used as the share image), JSON-LD on record pages, sitemap with `lastmod`, RSS with `pubDate`, robots (blocks `/admin`, `/api`, `/search`). The footer date is the latest published update.
 
+## Responsive and accessibility notes
+- Mobile radial menu (`src/lib/radial.ts`): a quarter-circle fan for up to 4 destinations at the smallest radius where nothing overlaps or leaves the screen (checked for 360/375/414 px wide viewports); with more items (e.g. 5+ vocations) it becomes a scrollable vertical stack. The core button doubles as Back/Close. The full semantic nav stays in the DOM (visually hidden on mobile).
+- Desktop nav is grouped (WORK / LIBRARY / SITE) so it scales with more vocations.
+- Contrast: all text pairs pass WCAG AA in both themes (lowest: muted text on surface, 4.93:1). Decorative rules stay light; form controls and buttons use a separate `--control` border token (>= 3:1).
+- Not verified in a real browser here (no browser available in my sandbox): please spot-check 375/768/1024/1440 px, keyboard focus order and the editor.
+
 ## Media storage
 Migration guide to S3/Cloudflare R2: `src/lib/storage/README.md`.
 

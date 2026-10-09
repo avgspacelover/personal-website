@@ -7,7 +7,7 @@ import { parseTerms, score } from "./search";
 
 export async function getVocations(): Promise<Vocation[]> {
   const db = await getDb();
-  return db.select({ slug: vocation.slug, name: vocation.name, intro: vocation.intro }).from(vocation).where(eq(vocation.status, "published")).orderBy(asc(vocation.position));
+  return db.select({ slug: vocation.slug, name: vocation.name, intro: vocation.intro, updated: vocation.updatedAt }).from(vocation).where(eq(vocation.status, "published")).orderBy(asc(vocation.position));
 }
 
 // Published entries with their published vocations (primary first). Data volume is small, so vocation filtering happens in JS.
