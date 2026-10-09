@@ -5,7 +5,9 @@ Next.js 14 (App Router) + TypeScript. Static-rendered public site: vocations, Ex
 ## Run
     npm install && npm run setup && npm run dev
 
-`setup` migrates and seeds. With no `DATABASE_URL`, an embedded Postgres (PGlite) is used under `.data/`. Set `DATABASE_URL` for real Postgres (same migrations in `drizzle/`). After editing `src/db/schema.ts` run `npm run db:generate`.
+`setup` migrates and seeds placeholder content (first run only: `db:seed` refuses to run on a database that already has content unless you pass `--force`, because seeding deletes content). With no `DATABASE_URL`, an embedded Postgres (PGlite) is used under `.data/`. Set `DATABASE_URL` for real Postgres (same migrations in `drizzle/`). After editing `src/db/schema.ts` run `npm run db:generate`.
+
+Deploying to a VPS: see `DEPLOY.md`. The app has been exercised against both the embedded PGlite and a real PostgreSQL server (all migrations, public pages, admin CRUD, JSONB bodies, redirects, PDF, agent, uploads, export).
 
 ## Admin (Google sign-in only)
 1. Google Cloud Console > OAuth client (Web). Authorized redirect URI: `<SITE_URL>/api/auth/callback/google`.
@@ -51,7 +53,7 @@ Storage sits behind the `MediaStorage` interface (`src/lib/storage/index.ts`: `p
 Built: public site, IA, routes, theme without flash, radial nav, visual system, Postgres schema (`db/schema.sql`).
 Also built (increment 2): /about, /resume (derived view), sitemap, robots, RSS at /feed.xml, 404. Set SITE_URL in production.
 Also built: Google-only admin auth, `/admin` dashboard, vocation CRUD (`/admin/vocations`), project/experience CRUD (`/admin/entries`), media library (`/admin/media`), Tiptap rich-text editor for record bodies, permanent redirects for renamed slugs/vocations, library editors for Essays/Books/Movies/Community (`/admin/library`), public search (`/search`) and admin search (`/admin/search`, includes drafts), JSON export, SEO metadata, resume builder with PDF export and a public resume (`/admin/resumes`), skills/education editor (`/admin/profile`), resume agent (`/admin/agent`).
-Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, search, export. Content now lives in the database; `src/lib/content.ts` is only the seed source (`npm run db:seed` resets the DB to it).
+Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, search, export. Content now lives in the database; `src/lib/content.ts` is only the seed source (`npm run db:seed -- --force` resets the DB to it).
 
 ## Decisions
 - Library items share one table (`library_item`) with per-collection field labels (`src/lib/library.ts`). Library links must be http(s)/mailto (checked on save and again on read). Book covers and movie posters are picked from the media library; deleting an image used as a cover or in a body is blocked.

@@ -2,6 +2,10 @@ import { getMigratedDb, vocation, entry, vocationEntry, libraryItem, skill, educ
 import { vocations, entries, library, skills, education as edu } from "../src/lib/content";
 (async () => {
   const db = await getMigratedDb();
+  if ((await db.select({ id: vocation.id }).from(vocation).limit(1)).length && !process.argv.includes("--force")) {
+    console.error("Refusing to seed: the database already has content (seeding DELETES vocations, records, library, skills and education). Re-run with --force to reset it.");
+    process.exit(1);
+  }
   for (const t of [vocationEntry, entry, vocation, libraryItem, skill, education]) await db.delete(t);
   const v = await db.insert(vocation).values(vocations.map((x, i) => ({ ...x, position: i, status: "published" as const }))).returning({ id: vocation.id, slug: vocation.slug });
   const vid = new Map(v.map((r) => [r.slug, r.id]));

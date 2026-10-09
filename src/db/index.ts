@@ -10,7 +10,7 @@ async function create(migrate: boolean): Promise<DB> {
   if (url) {
     const { drizzle } = await import("drizzle-orm/postgres-js");
     const postgres = (await import("postgres")).default;
-    const db = drizzle(postgres(url, { max: 5 }), { schema });
+    const db = drizzle(postgres(url, { max: 5, onnotice: () => {} }), { schema });
     if (migrate) await (await import("drizzle-orm/postgres-js/migrator")).migrate(db, { migrationsFolder: "drizzle" });
     return db as unknown as DB;
   }
