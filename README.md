@@ -32,6 +32,14 @@ A resume version (`resume` + `resume_item`) only references canonical records: p
 - **Public resume**: tick "Show this version on /resume" on a *Published* version (only one can be public). `/resume` renders it and `/resume/pdf` serves the PDF; otherwise `/resume` falls back to a plain overview. Admin PDF of any version: `/api/admin/resumes/<id>/pdf`.
 - Only one template exists (`classic`, the Jake-style layout); the earlier minimal/editorial/technical idea is deferred.
 
+## Resume agent (`/admin/agent`)
+Modes: tailor to a job description, create for a role, rank projects, gap analysis, improve bullets. Code: `src/lib/agent/`.
+- **Controlled tools only** (`tools.ts`): `search_projects`, `search_experience`, `get_project`, `get_experience`, `create_resume`, `add_to_resume`, `remove_from_resume`, `rewrite_bullet`, `note_gap`, `generate_pdf`. They read PUBLISHED records and edit only an in-memory proposal. There is no database access, no publishing and no edit of canonical content.
+- **Server-side grounding** (`ground.ts`): a bullet is kept only if it quotes evidence that appears verbatim in the source record, every number in it appears in the record, and every capitalised/technical term in it appears in the record. Rejected bullets are listed with the reason. Relevance scores and matched terms are computed by the server, not reported by the model.
+- **Human approval**: a run only stores a *proposal* (`agent_run`, with a full tool-call audit log). You review each record, its source link and evidence, edit bullets, then **Apply as draft**: it creates a new draft resume or appends to an existing one. It never publishes, never edits records, and never changes items already on a resume. Applied/discarded runs cannot be applied again.
+- **Providers** (isolated, replaceable): with no key, an **offline** provider ranks records by weighted term overlap and proposes verbatim sentences (no model, no cost, no data leaves the server). Set `ANTHROPIC_API_KEY` (and optionally `AGENT_MODEL`) for model-written bullets via `anthropic.ts`; record text and the target are then sent to that provider. If the model call fails, the run falls back to offline. Model text and record text are treated as untrusted data in the system prompt, and validation does not depend on the model obeying it.
+- The Anthropic provider is tested with a scripted mock of the API (tool loop, rejected invented bullets, unknown tools, outage fallback), **not** against the live API: please try one real run with your key.
+
 ## Media storage
 Migration guide to S3/Cloudflare R2: `src/lib/storage/README.md`.
 
@@ -42,7 +50,7 @@ Storage sits behind the `MediaStorage` interface (`src/lib/storage/index.ts`: `p
 ## Status vs. spec
 Built: public site, IA, routes, theme without flash, radial nav, visual system, Postgres schema (`db/schema.sql`).
 Also built (increment 2): /about, /resume (derived view), sitemap, robots, RSS at /feed.xml, 404. Set SITE_URL in production.
-Also built: Google-only admin auth, `/admin` dashboard, vocation CRUD (`/admin/vocations`), project/experience CRUD (`/admin/entries`), media library (`/admin/media`), Tiptap rich-text editor for record bodies, permanent redirects for renamed slugs/vocations, library editors for Essays/Books/Movies/Community (`/admin/library`), public search (`/search`) and admin search (`/admin/search`, includes drafts), JSON export, SEO metadata, resume builder with PDF export and a public resume (`/admin/resumes`), skills/education editor (`/admin/profile`).
+Also built: Google-only admin auth, `/admin` dashboard, vocation CRUD (`/admin/vocations`), project/experience CRUD (`/admin/entries`), media library (`/admin/media`), Tiptap rich-text editor for record bodies, permanent redirects for renamed slugs/vocations, library editors for Essays/Books/Movies/Community (`/admin/library`), public search (`/search`) and admin search (`/admin/search`, includes drafts), JSON export, SEO metadata, resume builder with PDF export and a public resume (`/admin/resumes`), skills/education editor (`/admin/profile`), resume agent (`/admin/agent`).
 Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, search, export. Content now lives in the database; `src/lib/content.ts` is only the seed source (`npm run db:seed` resets the DB to it).
 
 ## Decisions
@@ -58,4 +66,4 @@ Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, se
 - Vocation slugs share the `/[section]` namespace with library collections; the CMS must reject colliding slugs.
 
 ## Next
-1. Agent behind a server service (controlled tools, source-grounded proposals with approval). 2. Import from export. 3. Browser review at 375/768/1024/1440.
+1. Import from export. 2. Browser review at 375/768/1024/1440 and a real-key agent run. 3. Deployment guide (VPS, Postgres, backups, reverse proxy).

@@ -18,7 +18,7 @@ export async function getEntries(opts: { vocation?: string; kind?: Entry["kind"]
     .innerJoin(vocation, eq(vocation.id, vocationEntry.vocationId)).where(eq(vocation.status, "published"))
     .orderBy(desc(vocationEntry.isPrimary), asc(vocationEntry.position));
   const out = rows.map((r): Entry => ({
-    slug: r.slug, kind: r.kind, title: r.title, org: r.organization ?? undefined, summary: r.summary, year: r.period, status: r.phase, tech: r.tech,
+    id: r.id, slug: r.slug, kind: r.kind, title: r.title, org: r.organization ?? undefined, summary: r.summary, year: r.period, status: r.phase, tech: r.tech,
     body: r.body, location: r.location || undefined, updated: r.updatedAt, vocations: links.filter((l) => l.entryId === r.id).map((l) => l.slug),
   }));
   return opts.vocation ? out.filter((e) => e.vocations.includes(opts.vocation!)) : out.filter((e) => e.vocations.length > 0);

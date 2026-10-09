@@ -70,3 +70,12 @@ export const resumeItem = pgTable("resume_item", {
   bullets: text("bullets").array().notNull().default([]),
   proposedByAgent: boolean("proposed_by_agent").notNull().default(false), approved: boolean("approved").notNull().default(true),
 });
+
+// One row per agent run: what was asked, which provider answered, every tool call, and the proposal awaiting human review.
+export const agentRun = pgTable("agent_run", {
+  id: id(), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  mode: text("mode").notNull(), target: text("target").notNull().default(""), provider: text("provider").notNull(),
+  resumeId: uuid("resume_id").references(() => resume.id, { onDelete: "set null" }),
+  status: text("status").notNull().default("proposed"), summary: text("summary").notNull().default(""),
+  proposal: jsonb("proposal").notNull(), log: jsonb("log").notNull().default([]),
+});
