@@ -1,10 +1,22 @@
 import Link from "next/link";
 import { entryHref } from "@/lib/content";
 import { getEntries, getSkills, getEducation, getVocations } from "@/lib/queries";
+import { buildResume, publicResumeId } from "@/lib/resume";
 export const metadata = { title: "Resume" };
 // Derived view: every item is read from canonical records, nothing is re-entered here.
 export const dynamic = "force-dynamic";
 export default async function Resume() {
+  const pid = await publicResumeId(), m = pid ? await buildResume(pid) : null;
+  if (m) return (<>
+    <h1>{m.fullName || "Resume"}</h1>
+    {m.contact && <p className="mono">{m.contact}</p>}
+    {m.headline && <p className="lede">{m.headline}</p>}
+    <p><a className="tbtn big" href="/resume/pdf" style={{ textDecoration: "none", display: "inline-block" }}>DOWNLOAD PDF</a></p>
+    {m.sections.map((sec) => <section className="blk" key={sec.key}><h2>{sec.title}</h2><ul className="rows">
+      {sec.items.map((i, n) => <li key={n}><span className="mono">{i.period ?? ""}</span><span>{i.href ? <Link href={i.href}>{i.title}</Link> : i.title}{i.sub ? `, ${i.sub}` : ""}</span><span className="mono">{i.location ?? i.meta ?? ""}</span>
+        {i.bullets.length > 0 && <div style={{ gridColumn: 2 }}><ul style={{ margin: 0, paddingLeft: "1.1rem" }}>{i.bullets.map((b, k) => <li key={k} style={{ display: "list-item", border: 0, padding: 0 }}>{b}</li>)}</ul></div>}</li>)}
+    </ul></section>)}
+  </>);
   const [entries, skills, education, vs] = await Promise.all([getEntries(), getSkills(), getEducation(), getVocations()]);
   const vocName = (s: string) => vs.find((v) => v.slug === s)?.name ?? s;
   const exp = entries.filter((e) => e.kind === "experience");

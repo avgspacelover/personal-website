@@ -4,6 +4,7 @@ import { asc, eq } from "drizzle-orm";
 import { getDb, education, entry, resume, resumeItem, skill } from "@/db";
 import { requireAdmin } from "@/lib/auth";
 import { SECTIONS, TEMPLATES, buildResume } from "@/lib/resume";
+import { renderResumePdf } from "@/lib/resume-pdf";
 import { UUID } from "@/lib/slug";
 import { deleteResume, saveResume } from "../actions";
 const ta = { width: "100%" } as const;
@@ -18,6 +19,7 @@ export default async function Builder({ params, searchParams }: { params: { id: 
     db.select().from(entry).where(eq(entry.status, "published")).orderBy(asc(entry.kind), asc(entry.position)),
     db.select().from(skill).orderBy(asc(skill.position)), db.select().from(education).orderBy(asc(education.position)), buildResume(r.id),
   ]);
+  const pdf = model ? await renderResumePdf(model) : null;
   const cur = (rid: string) => items.find((i) => i.entryId === rid || i.skillId === rid || i.educationId === rid);
   const groups = [
     { key: "experience", rows: es.filter((e) => e.kind === "experience").map((e) => ({ id: e.id, title: e.title + (e.organization ? `, ${e.organization}` : ""), meta: e.period, fallback: e.summary })) },
@@ -34,11 +36,12 @@ export default async function Builder({ params, searchParams }: { params: { id: 
       {searchParams.saved && <p role="status" className="err">Saved.</p>}
       <label className="mono" htmlFor="name">VERSION NAME</label><input id="name" name="name" defaultValue={r.name} required />
       <label className="mono" htmlFor="fullName">FULL NAME (HEADER)</label><input id="fullName" name="fullName" defaultValue={r.fullName} />
-      <label className="mono" htmlFor="contact">CONTACT LINE (EMAIL, SITE, CITY)</label><input id="contact" name="contact" defaultValue={r.contact} />
+      <label className="mono" htmlFor="contact">CONTACT LINE (SEPARATE ITEMS WITH |)</label><input id="contact" name="contact" defaultValue={r.contact} />
       <label className="mono" htmlFor="headline">HEADLINE (2 SENTENCES MAX; YOU WRITE IT)</label><textarea id="headline" name="headline" rows={2} defaultValue={r.headline} />
-      <label className="mono" htmlFor="template">TEMPLATE</label><select id="template" name="template" defaultValue={r.template}>{TEMPLATES.map((t) => <option key={t}>{t}</option>)}</select>
+      <label className="mono" htmlFor="template">TEMPLATE</label><select id="template" name="template" defaultValue={r.template}>{TEMPLATES.map((t) => <option key={t} value={t}>{t === "classic" ? "Classic (single column, serif)" : t}</option>)}</select>
       <label className="mono" htmlFor="pages">LENGTH</label><select id="pages" name="pages" defaultValue={r.pages}><option value="one">One page</option><option value="multi">Multi-page</option></select>
       <label className="mono" htmlFor="status">STATUS</label><select id="status" name="status" defaultValue={r.status}><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select>
+      <label><input type="checkbox" name="isPublic" defaultChecked={r.isPublic} style={{ minHeight: 0 }} /> Show this version on /resume (needs status Published)</label>
       <fieldset style={{ border: "1px solid var(--control)", borderRadius: 2, padding: ".75rem" }}><legend className="mono">SECTIONS (ORDER 1 = FIRST)</legend>
         {SECTIONS.map((k) => <div key={k} style={{ display: "flex", gap: "1rem", alignItems: "center", minHeight: 44 }}>
           <label style={{ flex: 1 }}><input type="checkbox" name={`sec_${k}`} defaultChecked={r.sections.includes(k)} style={{ minHeight: 0 }} /> {k}</label>
@@ -62,7 +65,7 @@ export default async function Builder({ params, searchParams }: { params: { id: 
     <section className="blk"><h2>Outline</h2><div>
       {model?.sections.length ? model.sections.map((s) => <div key={s.key}><p className="mono" style={{ margin: ".5rem 0 0" }}>{s.title.toUpperCase()}</p>
         <ol style={{ margin: 0 }}>{s.items.map((i, n) => <li key={n}>{i.title}{i.sub ? `, ${i.sub}` : ""}{i.period ? ` (${i.period})` : ""}{i.bullets.length > 0 && <ul>{i.bullets.map((b, k) => <li key={k}>{b}</li>)}</ul>}</li>)}</ol></div>) : <p className="mono">Nothing selected yet.</p>}
-      <p className="mono">PDF export and the public page come next.</p></div></section>
+      {pdf && <p className="mono" role="status">PDF / {pdf.pages} PAGE{pdf.pages === 1 ? "" : "S"}{!pdf.fits ? " / DOES NOT FIT ONE PAGE: SHORTEN BULLETS OR DROP ITEMS" : ""} / <a href={`/api/admin/resumes/${r.id}/pdf`} target="_blank" rel="noreferrer">OPEN PDF</a></p>}</div></section>
     <section className="blk"><h2>Delete</h2><form action={deleteResume} className="login edit"><input type="hidden" name="id" value={r.id} />
       <label><input type="checkbox" name="confirm" style={{ minHeight: 0 }} /> I understand this cannot be undone</label><button className="tbtn big">DELETE VERSION</button></form></section>
   </>);

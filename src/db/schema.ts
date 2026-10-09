@@ -12,7 +12,7 @@ export const vocation = pgTable("vocation", {
 
 // Experience and Project share one table (kind column). Same fields, one CRUD path, one canonical record each.
 export const entry = pgTable("entry", {
-  id: id(), updatedAt: updatedAt(), kind: kind("kind").notNull(), slug: text("slug").notNull(), title: text("title").notNull(), organization: text("organization"),
+  id: id(), updatedAt: updatedAt(), kind: kind("kind").notNull(), slug: text("slug").notNull(), title: text("title").notNull(), organization: text("organization"), location: text("location").notNull().default(""),
   summary: text("summary").notNull().default(""), period: text("period").notNull().default(""), phase: text("phase").notNull().default(""),
   tech: text("tech").array().notNull().default([]), body: jsonb("body").notNull().default([]),
   position: integer("position").notNull().default(0), featured: boolean("featured").notNull().default(false),
@@ -36,7 +36,7 @@ export const skill = pgTable("skill", {
   id: id(), category: text("category").notNull(), items: text("items").array().notNull().default([]), position: integer("position").notNull().default(0),
 });
 export const education = pgTable("education", {
-  id: id(), institution: text("institution").notNull(), program: text("program").notNull().default(""), period: text("period").notNull().default(""), position: integer("position").notNull().default(0),
+  id: id(), institution: text("institution").notNull(), program: text("program").notNull().default(""), location: text("location").notNull().default(""), period: text("period").notNull().default(""), position: integer("position").notNull().default(0),
 });
 
 
@@ -56,9 +56,9 @@ export const redirectRule = pgTable("redirect_rule", {
 
 // Resume versions are configurations over canonical records. Nothing here duplicates record content except optional resume-specific bullets.
 export const resume = pgTable("resume", {
-  id: id(), updatedAt: updatedAt(), name: text("name").notNull(), template: text("template").notNull().default("minimal"),
+  id: id(), updatedAt: updatedAt(), name: text("name").notNull(), template: text("template").notNull().default("classic"),
   pages: text("pages").notNull().default("one"), fullName: text("full_name").notNull().default(""), contact: text("contact").notNull().default(""),
-  headline: text("headline").notNull().default(""), sections: text("sections").array().notNull().default(["experience", "projects", "skills", "education"]),
+  headline: text("headline").notNull().default(""), sections: text("sections").array().notNull().default(["education", "experience", "projects", "skills"]),
   isPublic: boolean("is_public").notNull().default(false), status: status("status").notNull().default("draft"),
 });
 export const resumeItem = pgTable("resume_item", {

@@ -1,6 +1,6 @@
 "use server";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { eq, ne } from "drizzle-orm";
 import { getDb, education, entry, resume, resumeItem, skill } from "@/db";
 import { requireAdmin } from "@/lib/auth";
 import { SECTIONS, TEMPLATES } from "@/lib/resume";
@@ -14,7 +14,7 @@ export async function createResume(fd: FormData) {
   await requireAdmin();
   const name = str(fd, "name");
   if (!name) redirect("/admin/resumes?error=name");
-  const [r] = await (await getDb()).insert(resume).values({ name: name.slice(0, 100), template: TEMPLATES.find((t) => t === fd.get("template")) ?? "minimal" }).returning({ id: resume.id });
+  const [r] = await (await getDb()).insert(resume).values({ name: name.slice(0, 100), template: TEMPLATES.find((t) => t === fd.get("template")) ?? "classic" }).returning({ id: resume.id });
   redirect(`/admin/resumes/${r.id}`);
 }
 
@@ -33,11 +33,14 @@ export async function saveResume(fd: FormData) {
   for (const s of ss) pick(s.id, { section: "skills", skillId: s.id });
   for (const d of ds) pick(d.id, { section: "education", educationId: d.id });
   const sections = SECTIONS.filter((k) => fd.get(`sec_${k}`) === "on").sort((a, b) => int(fd, `secpos_${a}`) - int(fd, `secpos_${b}`));
+  const status = STATUS.find((s) => s === fd.get("status")) ?? "draft";
+  const isPublic = fd.get("isPublic") === "on" && status === "published"; // only an approved (published) version can be public
   await db.transaction(async (tx) => {
+    if (isPublic) await tx.update(resume).set({ isPublic: false }).where(ne(resume.id, id));
     await tx.update(resume).set({
-      name: str(fd, "name").slice(0, 100), template: TEMPLATES.find((t) => t === fd.get("template")) ?? "minimal", pages: fd.get("pages") === "multi" ? "multi" : "one",
+      name: str(fd, "name").slice(0, 100), template: TEMPLATES.find((t) => t === fd.get("template")) ?? "classic", pages: fd.get("pages") === "multi" ? "multi" : "one",
       fullName: str(fd, "fullName").slice(0, 100), contact: str(fd, "contact").slice(0, 300), headline: str(fd, "headline").slice(0, 600), sections,
-      status: STATUS.find((s) => s === fd.get("status")) ?? "draft",
+      status, isPublic,
     }).where(eq(resume.id, id));
     await tx.delete(resumeItem).where(eq(resumeItem.resumeId, id));
     if (rows.length) await tx.insert(resumeItem).values(rows);

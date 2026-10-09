@@ -30,6 +30,7 @@ export default async function Detail({ params }: P) {
     <dl className="meta">
       <dt className="mono">YEAR</dt><dd>{e.year}</dd>
       {e.org && <><dt className="mono">ORGANIZATION</dt><dd>{e.org}</dd></>}
+      {e.location && <><dt className="mono">LOCATION</dt><dd>{e.location}</dd></>}
       <dt className="mono">DOMAIN</dt><dd>{e.vocations.map(vocName).join(" / ")}</dd>
       <dt className="mono">TECHNOLOGY</dt><dd>{e.tech.join(", ")}</dd>
       <dt className="mono">STATUS</dt><dd>{e.status}</dd>

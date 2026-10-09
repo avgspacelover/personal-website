@@ -32,6 +32,7 @@ export default async function EditEntry({ params, searchParams }: P) {
       <label className="mono" htmlFor="title">{kind === "projects" ? "TITLE" : "ROLE TITLE"}</label><input id="title" name="title" defaultValue={e?.title} required />
       <label className="mono" htmlFor="slug">SLUG (BLANK = FROM TITLE)</label><input id="slug" name="slug" defaultValue={e?.slug} />
       <label className="mono" htmlFor="organization">ORGANIZATION</label><input id="organization" name="organization" defaultValue={e?.organization ?? ""} />
+      <label className="mono" htmlFor="location">LOCATION</label><input id="location" name="location" defaultValue={e?.location} />
       <label className="mono" htmlFor="summary">SUMMARY</label><textarea id="summary" name="summary" rows={2} defaultValue={e?.summary} />
       <label className="mono" htmlFor="period">PERIOD (E.G. 2023–2025)</label><input id="period" name="period" defaultValue={e?.period} />
       <label className="mono" htmlFor="phase">PHASE (E.G. ACTIVE)</label><input id="phase" name="phase" defaultValue={e?.phase} />

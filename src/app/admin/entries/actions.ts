@@ -36,7 +36,7 @@ export async function saveEntry(fd: FormData) {
   const primary = valid.includes(str(fd, "primary")) ? str(fd, "primary") : valid[0];
   const primarySlug = found.find((r) => r.id === primary)?.slug;
   const values = {
-    title, slug, organization: str(fd, "organization") || null, summary: str(fd, "summary"), period: str(fd, "period"), phase: str(fd, "phase"),
+    title, slug, organization: str(fd, "organization") || null, location: str(fd, "location"), summary: str(fd, "summary"), period: str(fd, "period"), phase: str(fd, "phase"),
     tech: str(fd, "tech").split(",").map((s) => s.trim()).filter(Boolean),
     body,
     position: Number.parseInt(str(fd, "position"), 10) || 0, featured: fd.get("featured") === "on",

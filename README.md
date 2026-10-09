@@ -26,7 +26,11 @@ Auth.js handles OAuth; the session is an encrypted HttpOnly JWT cookie (3 days).
 - Not verified in a real browser here (no browser available in my sandbox): please spot-check 375/768/1024/1440 px, keyboard focus order and the editor.
 
 ## Resumes
-A resume version (`resume` + `resume_item`) only references canonical records: you pick published Experience/Projects, Skills and Education, order them, choose section order/template/length, and optionally write version-specific bullets (blank = the record's own summary). `buildResume()` (`src/lib/resume.ts`) is the single model that the builder outline, the public page and the PDF all read. Draft/archived records and unapproved agent-proposed items are excluded, so unfinished content can never reach a resume. Deleting a record removes it from every resume.
+A resume version (`resume` + `resume_item`) only references canonical records: pick published Experience/Projects plus Skills and Education (`/admin/profile`), order them, choose section order and length, and optionally write version-specific bullets (blank = the record's own summary). `buildResume()` (`src/lib/resume.ts`) is the single model behind the builder outline, the public page and the PDF. Draft/archived records and unapproved agent-proposed items are excluded. Deleting a record removes it from every resume.
+
+- **PDF** (`src/lib/resume-pdf.ts`, PDFKit): modelled on the popular "Jake's Resume" LaTeX layout: US Letter, 0.5in margins, centred small-caps name, one-line contact row (email/URLs are underlined, clickable links), small-caps section headings over a thin rule, bold title + right-aligned dates, italic organisation + location, compact bullets, unbulleted "Category: items" skill lines, in Computer Modern (CMU Serif, from the `computer-modern` package; falls back to Times). Text is real and selectable (ATS-friendly). "One page" shrinks type/spacing in steps down to 80%; if it still spills, the builder shows a warning. Section order defaults to Education, Experience, Projects, Technical Skills. Separate contact items with `|`.
+- **Public resume**: tick "Show this version on /resume" on a *Published* version (only one can be public). `/resume` renders it and `/resume/pdf` serves the PDF; otherwise `/resume` falls back to a plain overview. Admin PDF of any version: `/api/admin/resumes/<id>/pdf`.
+- Only one template exists (`classic`, the Jake-style layout); the earlier minimal/editorial/technical idea is deferred.
 
 ## Media storage
 Migration guide to S3/Cloudflare R2: `src/lib/storage/README.md`.
@@ -38,7 +42,7 @@ Storage sits behind the `MediaStorage` interface (`src/lib/storage/index.ts`: `p
 ## Status vs. spec
 Built: public site, IA, routes, theme without flash, radial nav, visual system, Postgres schema (`db/schema.sql`).
 Also built (increment 2): /about, /resume (derived view), sitemap, robots, RSS at /feed.xml, 404. Set SITE_URL in production.
-Also built: Google-only admin auth, `/admin` dashboard, vocation CRUD (`/admin/vocations`), project/experience CRUD (`/admin/entries`), media library (`/admin/media`), Tiptap rich-text editor for record bodies, permanent redirects for renamed slugs/vocations, library editors for Essays/Books/Movies/Community (`/admin/library`), public search (`/search`) and admin search (`/admin/search`, includes drafts), JSON export, SEO metadata, resume builder (`/admin/resumes`).
+Also built: Google-only admin auth, `/admin` dashboard, vocation CRUD (`/admin/vocations`), project/experience CRUD (`/admin/entries`), media library (`/admin/media`), Tiptap rich-text editor for record bodies, permanent redirects for renamed slugs/vocations, library editors for Essays/Books/Movies/Community (`/admin/library`), public search (`/search`) and admin search (`/admin/search`, includes drafts), JSON export, SEO metadata, resume builder with PDF export and a public resume (`/admin/resumes`), skills/education editor (`/admin/profile`).
 Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, search, export. Content now lives in the database; `src/lib/content.ts` is only the seed source (`npm run db:seed` resets the DB to it).
 
 ## Decisions
@@ -54,4 +58,4 @@ Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, se
 - Vocation slugs share the `/[section]` namespace with library collections; the CMS must reject colliding slugs.
 
 ## Next
-1. PDF export (text-based, 3 templates) + public resume page from the chosen version. 2. Agent behind a server service (tools, source-grounded proposals, approval). 3. Import from export.
+1. Agent behind a server service (controlled tools, source-grounded proposals with approval). 2. Import from export. 3. Browser review at 375/768/1024/1440.
