@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { searchPublic } from "@/lib/queries";
 export const metadata = { title: "Search", robots: { index: false, follow: true } };
-export default async function Search({ searchParams }: { searchParams: { q?: string } }) {
+export default async function Search(props: { searchParams: Promise<{ q?: string }> }) { const searchParams = await props.searchParams;
   const q = (searchParams.q ?? "").slice(0, 200).trim();
   const hits = await searchPublic(q);
   return (<>

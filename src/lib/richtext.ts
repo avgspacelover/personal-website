@@ -44,5 +44,5 @@ export function mediaKeysIn(n: N | Doc): string[] {
   const here = n.type === "image" ? [mediaKeyFromSrc((n as N).attrs?.src)].filter(Boolean) as string[] : [];
   return here.concat(((n as N).content ?? []).flatMap(mediaKeysIn));
 }
-export function parseBody(raw: string): Doc | null { try { return sanitizeDoc(JSON.parse(raw || "null")); } catch { return null; } }
+export function parseBody(raw: string): Doc | null { if (raw.length > 500_000) return null; try { return sanitizeDoc(JSON.parse(raw || "null")); } catch { return null; } }
 export const docText = (n: N | Doc): string => ((n as N).text ?? "") + " " + ((n as N).content ?? []).map(docText).join(" ");

@@ -79,3 +79,8 @@ export const agentRun = pgTable("agent_run", {
   status: text("status").notNull().default("proposed"), summary: text("summary").notNull().default(""),
   proposal: jsonb("proposal").notNull(), log: jsonb("log").notNull().default([]),
 });
+
+// Admin audit trail (who, what, when). Sign-ins (allowed and denied) and every mutating admin action.
+export const auditLog = pgTable("audit_log", {
+  id: id(), at: timestamp("at", { withTimezone: true }).notNull().defaultNow(), actor: text("actor").notNull(), action: text("action").notNull(), detail: text("detail").notNull().default(""),
+});

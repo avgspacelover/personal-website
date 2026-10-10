@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { searchAdmin } from "@/lib/admin-queries";
 export const metadata = { title: "Admin search" };
-export default async function AdminSearch({ searchParams }: { searchParams: { q?: string } }) {
+export default async function AdminSearch(props: { searchParams: Promise<{ q?: string }> }) { const searchParams = await props.searchParams;
   await requireAdmin();
   const q = (searchParams.q ?? "").slice(0, 200).trim();
   const hits = await searchAdmin(q);

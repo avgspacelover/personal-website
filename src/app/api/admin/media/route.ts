@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getAdmin, sameOrigin } from "@/lib/auth";
+import { adminEmail, sameOrigin } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 import { MAX_BYTES, MediaError, ingestImage } from "@/lib/media";
 import { mediaUrl } from "@/lib/storage";
 
@@ -9,13 +10,15 @@ export async function POST(req: Request) {
   const fail = (status: number, message: string, code: string) =>
     json ? NextResponse.json({ error: message }, { status }) : NextResponse.redirect(new URL(`/admin/media?error=${code}`, req.url), 303);
   if (!sameOrigin(req)) return new Response("Forbidden", { status: 403 });
-  if (!(await getAdmin())) return json ? NextResponse.json({ error: "Unauthorized" }, { status: 401 }) : NextResponse.redirect(new URL("/admin/login", req.url), 303);
+  const who = await adminEmail();
+  if (!who) return json ? NextResponse.json({ error: "Unauthorized" }, { status: 401 }) : NextResponse.redirect(new URL("/admin/login", req.url), 303);
   if (Number(req.headers.get("content-length") ?? 0) > MAX_BYTES + 256 * 1024) return fail(413, "File exceeds 5 MB.", "size");
   try {
     const fd = await req.formData();
     const file = fd.get("file");
     if (!(file instanceof File) || !file.size) return fail(400, "No file provided.", "file");
     const row = await ingestImage(Buffer.from(await file.arrayBuffer()), file.name, String(fd.get("alt") ?? "").trim());
+    await audit(who, "media.upload", row.key);
     if (!json) return NextResponse.redirect(new URL("/admin/media", req.url), 303);
     return NextResponse.json({ id: row.id, url: mediaUrl(row.key), width: row.width, height: row.height, variants: row.variants, alt: row.alt });
   } catch (e) {

@@ -7,7 +7,7 @@ import { requireAdmin } from "@/lib/auth";
 import { UUID } from "@/lib/slug";
 import { applyRun, discardRun } from "../actions";
 const msg: Record<string, string> = { none: "Tick at least one record to apply.", resume: "That resume no longer exists." };
-export default async function Run({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
+export default async function Run(props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }) { const params = await props.params; const searchParams = await props.searchParams;
   await requireAdmin();
   if (!UUID.test(params.id)) notFound();
   const db = await getDb();

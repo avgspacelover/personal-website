@@ -9,6 +9,15 @@ Next.js 14 (App Router) + TypeScript. Static-rendered public site: vocations, Ex
 
 Deploying to a VPS: see `DEPLOY.md`. The app has been exercised against both the embedded PGlite and a real PostgreSQL server (all migrations, public pages, admin CRUD, JSONB bodies, redirects, PDF, agent, uploads, export).
 
+## Security (spec section 9)
+- **Auth:** Google sign-in only (Auth.js), email allowlist re-checked on every request, 24 h encrypted HttpOnly session cookie (Secure over HTTPS). `SESSIONS_VALID_AFTER` revokes all sessions. Every admin page/action/route authorizes server-side.
+- **Rate limiting + CSP:** `src/proxy.ts` (limits listed in `DEPLOY.md`; nonce-based CSP, `CSP_REPORT_ONLY=1` to soften). Static headers in `next.config.mjs`.
+- **Data access:** optional two-role Postgres setup (`MIGRATE_DATABASE_URL` for migrations, `DATABASE_URL` data-only for the app).
+- **Input:** every text field is length-capped, rich text is whitelisted, URLs scheme-checked, bodies limited to 500 KB, uploads decoded and size-limited.
+- **Audit log** (`/admin/audit`) of sign-ins and admin actions. Redirects never reveal where a now-private record moved.
+- **Dependencies:** Next 16, React 19, current Auth.js/Drizzle/Tiptap; `npm audit --omit=dev` reports 0 vulnerabilities (dev-only tooling has a few moderate advisories, not shipped).
+- **Not verified in a browser:** CSP with the Google sign-in redirect, and the Tiptap 3 editor under React 19. Check both once locally.
+
 ## Admin (Google sign-in only)
 1. Google Cloud Console > OAuth client (Web). Authorized redirect URI: `<SITE_URL>/api/auth/callback/google`.
 2. `cp .env.example .env`, then set `AUTH_SECRET` (`openssl rand -base64 32`), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `ADMIN_EMAILS`.

@@ -5,7 +5,7 @@ import { variantKeys } from "@/lib/media";
 import { mediaUrl } from "@/lib/storage";
 import { deleteMedia, updateAlt } from "./actions";
 const msg: Record<string, string> = { size: "File exceeds 5 MB.", type: "Only JPEG, PNG and WebP images are accepted.", file: "Choose a file.", failed: "Upload failed.", confirm: "Tick the confirmation box to delete.", inuse: "This image is used in a record body. Remove it there first." };
-export default async function Media({ searchParams }: { searchParams: { error?: string } }) {
+export default async function Media(props: { searchParams: Promise<{ error?: string }> }) { const searchParams = await props.searchParams;
   await requireAdmin();
   const rows = await (await getDb()).select().from(mediaAsset).orderBy(desc(mediaAsset.createdAt));
   return (<>

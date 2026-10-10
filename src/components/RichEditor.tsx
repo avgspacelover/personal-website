@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
-import Link from "@tiptap/extension-link";
 type M = { url: string; thumb: string; alt: string };
 
 export function RichEditor({ name, initial, media }: { name: string; initial: object; media: M[] }) {
@@ -21,7 +20,8 @@ export function RichEditor({ name, initial, media }: { name: string; initial: ob
   }
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [StarterKit.configure({ heading: { levels: [2, 3] } }), Image, Link.configure({ openOnClick: false, autolink: false })],
+    shouldRerenderOnTransaction: true,
+    extensions: [StarterKit.configure({ heading: { levels: [2, 3] }, underline: false, link: { openOnClick: false, autolink: false } }), Image],
     content: initial,
     editorProps: {
       attributes: { class: "editor prose", role: "textbox", "aria-multiline": "true", "aria-label": "Body" },

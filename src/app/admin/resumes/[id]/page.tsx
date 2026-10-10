@@ -8,7 +8,7 @@ import { renderResumePdf } from "@/lib/resume-pdf";
 import { UUID } from "@/lib/slug";
 import { deleteResume, saveResume } from "../actions";
 const ta = { width: "100%" } as const;
-export default async function Builder({ params, searchParams }: { params: { id: string }; searchParams: { error?: string; saved?: string } }) {
+export default async function Builder(props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; saved?: string }> }) { const params = await props.params; const searchParams = await props.searchParams;
   await requireAdmin();
   if (!UUID.test(params.id)) notFound();
   const db = await getDb();

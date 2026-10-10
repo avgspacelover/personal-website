@@ -1,6 +1,6 @@
 import { CONTENT_TYPES, KEY_RE, getStorage } from "@/lib/storage";
 // Public, read-only. Keys are random and immutable, so responses are cached for a year.
-export async function GET(_: Request, { params }: { params: { key: string } }) {
+export async function GET(_: Request, ctx: { params: Promise<{ key: string }> }) { const params = await ctx.params;
   if (!KEY_RE.test(params.key)) return new Response("Not found", { status: 404 });
   const data = await getStorage().get(params.key);
   if (!data) return new Response("Not found", { status: 404 });

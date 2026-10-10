@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { startRun } from "./actions";
 export const metadata = { title: "Resume agent" };
 const msg: Record<string, string> = { mode: "Choose a mode.", target: "Describe the role or paste the job description.", resume: "Choose a resume to improve.", nobullets: "That resume has no version-specific bullets to improve yet." };
-export default async function Agent({ searchParams }: { searchParams: { error?: string } }) {
+export default async function Agent(props: { searchParams: Promise<{ error?: string }> }) { const searchParams = await props.searchParams;
   await requireAdmin();
   const db = await getDb(), prov = providerInfo();
   const [runs, resumes] = await Promise.all([db.select().from(agentRun).orderBy(desc(agentRun.createdAt)).limit(15), db.select({ id: resume.id, name: resume.name }).from(resume)]);

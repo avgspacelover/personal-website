@@ -4,7 +4,7 @@ import { asc, eq } from "drizzle-orm";
 import { getDb, libraryItem } from "@/db";
 import { requireAdmin } from "@/lib/auth";
 import { COLLECTIONS } from "@/lib/library";
-export default async function List({ params }: { params: { collection: string } }) {
+export default async function List(props: { params: Promise<{ collection: string }> }) { const params = await props.params;
   await requireAdmin();
   const cfg = COLLECTIONS[params.collection];
   if (!cfg) notFound();

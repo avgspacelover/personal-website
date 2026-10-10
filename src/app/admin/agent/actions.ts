@@ -6,12 +6,12 @@ import { requireAdmin } from "@/lib/auth";
 import { runAgent } from "@/lib/agent";
 import type { Proposal } from "@/lib/agent/tools";
 import { UUID } from "@/lib/slug";
-const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
+const str = (fd: FormData, k: string, max = 8000) => String(fd.get(k) ?? "").trim().slice(0, max);
 const MODES = ["create", "tailor", "gap", "improve", "rank"] as const;
 const lines = (s: string) => s.split("\n").map((l) => l.trim().slice(0, 300)).filter(Boolean).slice(0, 6);
 
 export async function startRun(fd: FormData) {
-  await requireAdmin();
+  await requireAdmin("startRun");
   const mode = MODES.find((m) => m === fd.get("mode"));
   const target = str(fd, "target").slice(0, 8000), rid = str(fd, "resumeId");
   if (!mode) redirect("/admin/agent?error=mode");
@@ -30,7 +30,7 @@ export async function startRun(fd: FormData) {
 // The ONLY path from a proposal to real data, and it is a human action. It creates or extends a DRAFT resume. It never publishes,
 // never edits canonical records, and never changes items already on an existing resume.
 export async function applyRun(fd: FormData) {
-  await requireAdmin();
+  await requireAdmin("applyRun");
   const id = str(fd, "id");
   if (!UUID.test(id)) redirect("/admin/agent");
   const db = await getDb();
@@ -58,7 +58,7 @@ export async function applyRun(fd: FormData) {
 }
 
 export async function discardRun(fd: FormData) {
-  await requireAdmin();
+  await requireAdmin("discardRun");
   const id = str(fd, "id");
   if (UUID.test(id)) await (await getDb()).update(agentRun).set({ status: "discarded" }).where(and(eq(agentRun.id, id), eq(agentRun.status, "proposed")));
   redirect("/admin/agent");

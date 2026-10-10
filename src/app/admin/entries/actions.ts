@@ -9,10 +9,10 @@ import { addRedirects, removeRedirectsTo } from "@/lib/redirects";
 
 const STATUS = ["draft", "published", "archived"] as const;
 const KINDS = ["projects", "experience"] as const;
-const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
+const str = (fd: FormData, k: string, max = 2000) => String(fd.get(k) ?? "").trim().slice(0, max); // every text field is capped
 
 export async function saveEntry(fd: FormData) {
-  await requireAdmin();
+  await requireAdmin("saveEntry");
   const id = str(fd, "id");
   if (id && !UUID.test(id)) redirect("/admin/entries");
   const db = await getDb();
@@ -20,14 +20,14 @@ export async function saveEntry(fd: FormData) {
   const oldPrimary = id ? (await db.select({ slug: vocation.slug }).from(vocationEntry).innerJoin(vocation, eq(vocation.id, vocationEntry.vocationId)).where(and(eq(vocationEntry.entryId, id), eq(vocationEntry.isPrimary, true))).limit(1))[0] : null;
   if (id && !existing) redirect("/admin/entries");
   const kind = existing?.kind ?? KINDS.find((k) => k === fd.get("kind")) ?? "projects"; // kind is fixed after creation
-  const title = str(fd, "title");
-  const slug = slugify(str(fd, "slug") || title);
+  const title = str(fd, "title", 200);
+  const slug = slugify(str(fd, "slug", 120) || title).slice(0, 120);
   const back = (e: string): never => redirect(`/admin/entries/${id || "new"}?kind=${kind}&error=${e}`);
   if (!title) back("title");
   if (!slug) back("slug");
   const clash = await db.select({ id: entry.id }).from(entry).where(and(eq(entry.kind, kind), eq(entry.slug, slug), id ? ne(entry.id, id) : undefined)).limit(1);
   if (clash.length) back("taken");
-  const body = parseBody(str(fd, "body"));
+  const body = parseBody(String(fd.get("body") ?? ""));
   if (!body) back("body");
 
   const wanted = fd.getAll("vocations").map(String).filter((v) => UUID.test(v));
@@ -36,8 +36,8 @@ export async function saveEntry(fd: FormData) {
   const primary = valid.includes(str(fd, "primary")) ? str(fd, "primary") : valid[0];
   const primarySlug = found.find((r) => r.id === primary)?.slug;
   const values = {
-    title, slug, organization: str(fd, "organization") || null, location: str(fd, "location"), summary: str(fd, "summary"), period: str(fd, "period"), phase: str(fd, "phase"),
-    tech: str(fd, "tech").split(",").map((s) => s.trim()).filter(Boolean),
+    title, slug, organization: str(fd, "organization", 150) || null, location: str(fd, "location", 100), summary: str(fd, "summary", 600), period: str(fd, "period", 50), phase: str(fd, "phase", 50),
+    tech: str(fd, "tech", 600).split(",").map((s) => s.trim().slice(0, 40)).filter(Boolean).slice(0, 20),
     body,
     position: Number.parseInt(str(fd, "position"), 10) || 0, featured: fd.get("featured") === "on",
     status: STATUS.find((s) => s === fd.get("status")) ?? "draft",
@@ -54,7 +54,7 @@ export async function saveEntry(fd: FormData) {
 }
 
 export async function deleteEntry(fd: FormData) {
-  await requireAdmin();
+  await requireAdmin("deleteEntry");
   const id = str(fd, "id");
   if (!UUID.test(id)) redirect("/admin/entries");
   if (fd.get("confirm") !== "on") redirect(`/admin/entries/${id}?error=confirm`);

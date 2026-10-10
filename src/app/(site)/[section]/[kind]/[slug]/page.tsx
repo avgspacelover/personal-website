@@ -5,16 +5,16 @@ import { redirectFor } from "@/lib/redirects";
 import { RichText } from "@/components/RichText";
 import { mediaKeysIn, toDoc } from "@/lib/richtext";
 import { mediaUrl } from "@/lib/storage";
-type P = { params: { section: string; kind: string; slug: string } };
+type P = { params: Promise<{ section: string; kind: string; slug: string }> };
 export const dynamic = "force-dynamic";
 // Canonical route only: /<primary-vocation>/<kind>/<slug>. Other vocation pages link here.
-export async function generateMetadata({ params }: P) {
+export async function generateMetadata(props: P) { const params = await props.params;
   const e = await getEntry(params.kind, params.slug);
   if (!e) return {};
   const path = entryHref(e), img = mediaKeysIn(toDoc(e.body))[0];
   return { title: e.title, description: e.summary, alternates: { canonical: path }, openGraph: { type: "article" as const, title: e.title, description: e.summary, url: path, images: img ? [mediaUrl(img)] : undefined } };
 }
-export default async function Detail({ params }: P) {
+export default async function Detail(props: P) { const params = await props.params;
   const e = await getEntry(params.kind, params.slug);
   const names = new Map((await getVocations()).map((v) => [v.slug, v.name]));
   const vocName = (s: string) => names.get(s) ?? s;

@@ -7,7 +7,7 @@ const msg: Record<string, string> = {
   Configuration: "Sign-in is not configured.",
 };
 const REQUIRED = ["AUTH_SECRET", "AUTH_GOOGLE_ID", "AUTH_GOOGLE_SECRET", "ADMIN_EMAILS"];
-export default async function Login({ searchParams }: { searchParams: { error?: string } }) {
+export default async function Login(props: { searchParams: Promise<{ error?: string }> }) { const searchParams = await props.searchParams;
   if (await getAdmin()) redirect("/admin");
   const missing = REQUIRED.filter((k) => !process.env[k]);
   const dev = process.env.NODE_ENV !== "production";

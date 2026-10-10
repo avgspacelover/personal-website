@@ -9,8 +9,8 @@ import { requireAdmin } from "@/lib/auth";
 import { UUID } from "@/lib/slug";
 import { deleteEntry, saveEntry } from "../actions";
 const msg: Record<string, string> = { title: "Title is required.", slug: "Slug could not be derived; enter one.", taken: "Another record of this type already uses that slug.", confirm: "Tick the confirmation box to delete.", body: "Body could not be read; reload and try again." };
-type P = { params: { id: string }; searchParams: { error?: string; kind?: string } };
-export default async function EditEntry({ params, searchParams }: P) {
+type P = { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; kind?: string }> };
+export default async function EditEntry(props: P) { const params = await props.params; const searchParams = await props.searchParams;
   await requireAdmin();
   const db = await getDb();
   const isNew = params.id === "new";

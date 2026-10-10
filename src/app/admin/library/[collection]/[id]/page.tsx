@@ -7,7 +7,7 @@ import { COLLECTIONS, RECS } from "@/lib/library";
 import { UUID } from "@/lib/slug";
 import { deleteItem, saveItem } from "../../actions";
 const msg: Record<string, string> = { title: "Title is required.", url: "URL must start with https://, http:// or mailto:.", image: "Choose an image from the media library.", confirm: "Tick the confirmation box to delete." };
-export default async function Edit({ params, searchParams }: { params: { collection: string; id: string }; searchParams: { error?: string } }) {
+export default async function Edit(props: { params: Promise<{ collection: string; id: string }>; searchParams: Promise<{ error?: string }> }) { const params = await props.params; const searchParams = await props.searchParams;
   await requireAdmin();
   const cfg = COLLECTIONS[params.collection];
   if (!cfg) notFound();

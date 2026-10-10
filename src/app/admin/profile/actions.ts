@@ -7,7 +7,7 @@ const lines = (fd: FormData, k: string) => String(fd.get(k) ?? "").split("\n").m
 
 // Rows are matched by name (category / institution) so ids, and therefore resume selections, survive edits. Removing a line removes the row.
 export async function saveProfile(fd: FormData) {
-  await requireAdmin();
+  await requireAdmin("saveProfile");
   const skills = lines(fd, "skills").flatMap((l, position) => {
     const [cat, ...rest] = l.split(":"), items = rest.join(":").split(",").map((s) => s.trim()).filter(Boolean).slice(0, 40);
     return cat.trim() && items.length ? [{ category: cat.trim().slice(0, 80), items, position }] : [];

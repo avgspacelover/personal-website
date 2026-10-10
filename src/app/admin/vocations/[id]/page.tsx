@@ -10,7 +10,7 @@ const msg: Record<string, string> = {
   reserved: "That slug is reserved by a fixed route or a library collection.", taken: "Another vocation already uses that slug.",
   confirm: "Tick the confirmation box to delete.",
 };
-export default async function EditVocation({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
+export default async function EditVocation(props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }) { const params = await props.params; const searchParams = await props.searchParams;
   await requireAdmin();
   const isNew = params.id === "new";
   const v = isNew || !UUID.test(params.id) ? null : (await (await getDb()).select().from(vocation).where(eq(vocation.id, params.id)).limit(1))[0];

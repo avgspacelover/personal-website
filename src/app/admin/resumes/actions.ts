@@ -6,12 +6,12 @@ import { requireAdmin } from "@/lib/auth";
 import { SECTIONS, TEMPLATES } from "@/lib/resume";
 import { UUID } from "@/lib/slug";
 const STATUS = ["draft", "published", "archived"] as const;
-const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
+const str = (fd: FormData, k: string, max = 8000) => String(fd.get(k) ?? "").trim().slice(0, max);
 const int = (fd: FormData, k: string) => Number.parseInt(str(fd, k), 10) || 0;
 const lines = (s: string) => s.split("\n").map((l) => l.trim().slice(0, 300)).filter(Boolean).slice(0, 8);
 
 export async function createResume(fd: FormData) {
-  await requireAdmin();
+  await requireAdmin("createResume");
   const name = str(fd, "name");
   if (!name) redirect("/admin/resumes?error=name");
   const [r] = await (await getDb()).insert(resume).values({ name: name.slice(0, 100), template: TEMPLATES.find((t) => t === fd.get("template")) ?? "classic" }).returning({ id: resume.id });
@@ -19,7 +19,7 @@ export async function createResume(fd: FormData) {
 }
 
 export async function saveResume(fd: FormData) {
-  await requireAdmin();
+  await requireAdmin("saveResume");
   const id = str(fd, "id");
   if (!UUID.test(id)) redirect("/admin/resumes");
   if (!str(fd, "name")) redirect(`/admin/resumes/${id}?error=name`);
@@ -49,7 +49,7 @@ export async function saveResume(fd: FormData) {
 }
 
 export async function deleteResume(fd: FormData) {
-  await requireAdmin();
+  await requireAdmin("deleteResume");
   const id = str(fd, "id");
   if (!UUID.test(id)) redirect("/admin/resumes");
   if (fd.get("confirm") !== "on") redirect(`/admin/resumes/${id}?error=confirm`);

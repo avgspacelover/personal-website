@@ -1,31 +1,36 @@
 # Deploying to a VPS (low-cost, single server)
 
-Target: one Linux VPS (1 GB RAM is enough), Node 20+, PostgreSQL, a reverse proxy for HTTPS. Nothing here was run on a real VPS from my side (no systemd/Caddy in my sandbox); the app itself was tested against real PostgreSQL. Treat the unit and Caddyfile below as a starting point and check each step.
+Target: one Linux VPS (1 GB RAM is enough), Node 20.9+ (required by Next.js 16), PostgreSQL, a reverse proxy for HTTPS. Nothing here was run on a real VPS from my side (no systemd/Caddy in my sandbox); the app itself was tested against real PostgreSQL. Treat the unit and Caddyfile below as a starting point and check each step.
 
 ## 1. Server basics
 - Create a non-root user (e.g. `archive`), enable a firewall (allow 22, 80, 443 only), keep the OS updated.
-- Install Node.js 20+ and PostgreSQL 15+ (`apt install postgresql`).
+- Install Node.js 20.9+ and PostgreSQL 15+ (`apt install postgresql`).
 
-## 2. Database
+## 2. Database (two roles: least privilege)
+The running app gets a role that can only read and write data; a separate owner role runs migrations. If the app is compromised it cannot drop or alter tables.
 ```sql
 -- as postgres
-CREATE USER archive WITH PASSWORD 'strong-password';
-CREATE DATABASE archive OWNER archive;
+CREATE ROLE archive_owner LOGIN PASSWORD 'long-random-1';   -- migrations only
+CREATE ROLE archive_app   LOGIN PASSWORD 'long-random-2';   -- the running app
+CREATE DATABASE archive OWNER archive_owner;
+\c archive
+GRANT USAGE ON SCHEMA public TO archive_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE archive_owner IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO archive_app;
 ```
-`DATABASE_URL=postgres://archive:strong-password@localhost:5432/archive` (Postgres only listens on localhost by default; keep it that way).
+Keep Postgres listening on localhost only.
 
 ## 3. App
 ```bash
 git clone <your repo> /srv/archive && cd /srv/archive
 npm ci
 cp .env.example .env          # then fill it in (below)
-npm run db:migrate            # applies migrations. For a FIRST run you may also `npm run db:seed` for placeholder content;
+MIGRATE_DATABASE_URL=postgres://archive_owner:...@localhost:5432/archive npm run db:migrate   # applies migrations as the OWNER role. For a FIRST run you may also `npm run db:seed` for placeholder content;
                               # never seed an existing site: seeding deletes content (it refuses without --force)
 npm run build
 ```
 `.env` (production):
 ```
-DATABASE_URL=postgres://archive:...@localhost:5432/archive
+DATABASE_URL=postgres://archive_app:...@localhost:5432/archive   # data-only role. Do NOT put MIGRATE_DATABASE_URL here.
 SITE_URL=https://example.com
 AUTH_URL=https://example.com
 AUTH_SECRET=<openssl rand -base64 32>
@@ -84,10 +89,18 @@ Cron daily (`0 3 * * *`, with `DATABASE_URL` exported or sourced from `.env`), t
 
 ## 7. Updating
 ```bash
-cd /srv/archive && git pull && npm ci && npm run db:migrate && npm run build && sudo systemctl restart archive
+cd /srv/archive && git pull && npm ci && MIGRATE_DATABASE_URL=postgres://archive_owner:...@localhost:5432/archive npm run db:migrate && npm run build && sudo systemctl restart archive
 ```
 
-## 8. After first deploy, check
+## 8. Security notes
+- **The app must only be reachable through the reverse proxy** (the unit binds 127.0.0.1; firewall port 3000). Rate limiting keys on the *last* `X-Forwarded-For` entry, which Caddy sets to the real client address; a client talking to the app directly could forge that header and dodge the limits.
+- **Rate limits** (per IP per minute, in `src/proxy.ts`): `/api/auth` 30, `/admin/login` 20, `/search` 30, `/resume/pdf` 6, everything 600. They are in memory, so per process; add proxy-level limits if you run several instances.
+- **Headers:** a Content-Security-Policy with a per-request nonce, frame blocking, nosniff, referrer and permissions policies, and HSTS (production). If something misbehaves after deploy, open the browser console: set `CSP_REPORT_ONLY=1` to log violations without blocking while you investigate, and tell me what it reports.
+- **Sign everyone out:** set `SESSIONS_VALID_AFTER=<now, ISO format>` in `.env` and restart. Sessions last 24 h. Removing an email from `ADMIN_EMAILS` revokes that person at once.
+- **Audit:** `/admin/audit` lists sign-ins (allowed and denied) and every admin change.
+- Run `npm audit --omit=dev` before each deploy.
+
+## 9. After first deploy, check
 - `/admin` redirects to sign-in; your Google account (in `ADMIN_EMAILS`) gets in; another account is refused.
 - Upload an image; reload it from `/media/...`; confirm files appear in `MEDIA_DIR`.
 - Download a resume PDF; `/sitemap.xml` and `/robots.txt` use your real domain.

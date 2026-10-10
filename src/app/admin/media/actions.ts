@@ -8,13 +8,13 @@ import { getStorage } from "@/lib/storage";
 import { UUID } from "@/lib/slug";
 
 export async function updateAlt(fd: FormData) {
-  await requireAdmin();
+  await requireAdmin("updateAlt");
   const id = String(fd.get("id") ?? "");
   if (UUID.test(id)) await (await getDb()).update(mediaAsset).set({ alt: String(fd.get("alt") ?? "").trim().slice(0, 500) }).where(eq(mediaAsset.id, id));
   redirect("/admin/media");
 }
 export async function deleteMedia(fd: FormData) {
-  await requireAdmin();
+  await requireAdmin("deleteMedia");
   const id = String(fd.get("id") ?? "");
   if (!UUID.test(id)) redirect("/admin/media");
   if (fd.get("confirm") !== "on") redirect("/admin/media?error=confirm");

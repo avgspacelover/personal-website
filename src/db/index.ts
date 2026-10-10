@@ -5,8 +5,9 @@ export type DB = PgDatabase<PgQueryResultHKT, typeof schema>;
 const dir = process.env.PGLITE_DIR ?? ".data/pg";
 
 // DATABASE_URL set -> Postgres. Unset -> embedded Postgres (PGlite) in .data/, for zero-setup local dev.
+// Migrations/seed may use MIGRATE_DATABASE_URL (a role that owns the schema); the running app uses DATABASE_URL (data access only).
 async function create(migrate: boolean): Promise<DB> {
-  const url = process.env.DATABASE_URL;
+  const url = migrate ? (process.env.MIGRATE_DATABASE_URL ?? process.env.DATABASE_URL) : process.env.DATABASE_URL;
   if (url) {
     const { drizzle } = await import("drizzle-orm/postgres-js");
     const postgres = (await import("postgres")).default;

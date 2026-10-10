@@ -7,16 +7,16 @@ import { requireAdmin } from "@/lib/auth";
 import { UUID, slugError, slugify } from "@/lib/slug";
 
 const STATUS = ["draft", "published", "archived"] as const;
-const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
+const str = (fd: FormData, k: string, max = 2000) => String(fd.get(k) ?? "").trim().slice(0, max);
 
 export async function saveVocation(fd: FormData) {
-  await requireAdmin();
+  await requireAdmin("saveVocation");
   const id = str(fd, "id");
-  const name = str(fd, "name");
-  const slug = slugify(str(fd, "slug") || name);
+  const name = str(fd, "name", 100);
+  const slug = slugify(str(fd, "slug", 60) || name).slice(0, 60);
   const status = STATUS.find((s) => s === fd.get("status")) ?? "draft";
   const position = Number.parseInt(str(fd, "position"), 10) || 0;
-  const intro = str(fd, "intro");
+  const intro = str(fd, "intro", 1000);
   const back = (e: string): never => redirect(`/admin/vocations/${id || "new"}?error=${e}`);
   if (id && !UUID.test(id)) redirect("/admin/vocations");
   if (!name) back("name");
@@ -41,7 +41,7 @@ export async function saveVocation(fd: FormData) {
 }
 
 export async function deleteVocation(fd: FormData) {
-  await requireAdmin();
+  await requireAdmin("deleteVocation");
   const id = str(fd, "id");
   if (!UUID.test(id)) redirect("/admin/vocations");
   if (fd.get("confirm") !== "on") redirect(`/admin/vocations/${id}?error=confirm`);

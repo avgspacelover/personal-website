@@ -3,7 +3,7 @@ import { getDb, education, skill } from "@/db";
 import { requireAdmin } from "@/lib/auth";
 import { saveProfile } from "./actions";
 export const metadata = { title: "Profile" };
-export default async function Profile({ searchParams }: { searchParams: { saved?: string } }) {
+export default async function Profile(props: { searchParams: Promise<{ saved?: string }> }) { const searchParams = await props.searchParams;
   await requireAdmin();
   const db = await getDb();
   const [ss, es] = await Promise.all([db.select().from(skill).orderBy(asc(skill.position)), db.select().from(education).orderBy(asc(education.position))]);

@@ -3,10 +3,10 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { redirectFor } from "@/lib/redirects";
 import { collections, entryHref } from "@/lib/content";
 import { getVocations, getEntries, getLibrary } from "@/lib/queries";
-type P = { params: { section: string } };
+type P = { params: Promise<{ section: string }> };
 export const dynamic = "force-dynamic";
-export async function generateMetadata({ params }: P) { const s = [...(await getVocations()), ...collections].find((x) => x.slug === params.section); return { title: s?.name, alternates: { canonical: `/${params.section}` } }; }
-export default async function Section({ params }: P) {
+export async function generateMetadata(props: P) { const params = await props.params; const s = [...(await getVocations()), ...collections].find((x) => x.slug === params.section); return { title: s?.name, alternates: { canonical: `/${params.section}` } }; }
+export default async function Section(props: P) { const params = await props.params;
   const v = (await getVocations()).find((x) => x.slug === params.section);
   if (v) {
     const all = await getEntries({ vocation: v.slug });

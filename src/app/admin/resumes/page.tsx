@@ -4,7 +4,7 @@ import { getDb, resume } from "@/db";
 import { requireAdmin } from "@/lib/auth";
 import { TEMPLATES } from "@/lib/resume";
 import { createResume } from "./actions";
-export default async function Resumes({ searchParams }: { searchParams: { error?: string } }) {
+export default async function Resumes(props: { searchParams: Promise<{ error?: string }> }) { const searchParams = await props.searchParams;
   await requireAdmin();
   const rows = await (await getDb()).select().from(resume).orderBy(desc(resume.updatedAt));
   return (<>
