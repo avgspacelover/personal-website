@@ -7,6 +7,8 @@ type M = { url: string; thumb: string; alt: string };
 
 export function RichEditor({ name, initial, media }: { name: string; initial: object; media: M[] }) {
   const field = useRef<HTMLInputElement>(null);
+  // The form value lives in state (controlled input): React re-renders on every editor transaction and would otherwise reset an uncontrolled hidden field to its initial value.
+  const [json, setJson] = useState(() => JSON.stringify(initial));
   const [dirty, setDirty] = useState(false);
   const [note, setNote] = useState("");
   async function upload(file: File) {
@@ -27,7 +29,7 @@ export function RichEditor({ name, initial, media }: { name: string; initial: ob
       attributes: { class: "editor prose", role: "textbox", "aria-multiline": "true", "aria-label": "Body" },
       handleDrop: (_v, ev) => { const f = (ev as DragEvent).dataTransfer?.files?.[0]; if (f?.type.startsWith("image/")) { ev.preventDefault(); void upload(f); return true; } return false; },
     },
-    onUpdate: ({ editor }) => { if (field.current) field.current.value = JSON.stringify(editor.getJSON()); setDirty(true); },
+    onUpdate: ({ editor }) => { setJson(JSON.stringify(editor.getJSON())); setDirty(true); },
   });
   useEffect(() => {
     const form = field.current?.form;
@@ -44,7 +46,7 @@ export function RichEditor({ name, initial, media }: { name: string; initial: ob
   };
   const B = (label: string, on: () => void, active?: boolean, aria?: string) => <button type="button" className="tbtn" onClick={on} aria-pressed={active} aria-label={aria ?? label}>{label}</button>;
   return (<div>
-    <input ref={field} type="hidden" name={name} defaultValue={JSON.stringify(initial)} />
+    <input ref={field} type="hidden" name={name} value={json} readOnly />
     {editor && <div className="toolbar" role="toolbar" aria-label="Formatting">
       {B("B", () => c().toggleBold().run(), editor.isActive("bold"), "Bold")}{B("I", () => c().toggleItalic().run(), editor.isActive("italic"), "Italic")}
       {B("H2", () => c().toggleHeading({ level: 2 }).run(), editor.isActive("heading", { level: 2 }), "Heading 2")}{B("H3", () => c().toggleHeading({ level: 3 }).run(), editor.isActive("heading", { level: 3 }), "Heading 3")}

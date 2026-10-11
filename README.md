@@ -20,7 +20,7 @@ Caching: public pages render per request (measured 18-34 ms TTFB with real Postg
 - **Input:** every text field is length-capped, rich text is whitelisted, URLs scheme-checked, bodies limited to 500 KB, uploads decoded and size-limited.
 - **Audit log** (`/admin/audit`) of sign-ins and admin actions. Redirects never reveal where a now-private record moved.
 - **Dependencies:** Next 16, React 19, current Auth.js/Drizzle/Tiptap; `npm audit --omit=dev` reports 0 vulnerabilities (dev-only tooling has a few moderate advisories, not shipped).
-- **Not verified in a browser:** CSP with the Google sign-in redirect, and the Tiptap 3 editor under React 19. Check both once locally.
+- **Browser-verified** (headless Chromium): no console errors or CSP violations on public pages, login or admin at 375/768/1024/1440 px; no horizontal overflow; hydration, theme cycle/persistence, OS dark mode, keyboard focus rings, mobile menu geometry, and the Tiptap 3 editor (typing, toolbar state, save, public render, reopen). **Not verifiable without internet:** the actual redirect to Google and the OAuth callback; check sign-in once on your real domain.
 
 ## Admin (Google sign-in only)
 1. Google Cloud Console > OAuth client (Web). Authorized redirect URI: `<SITE_URL>/api/auth/callback/google`.
@@ -35,6 +35,7 @@ Auth.js handles OAuth; the session is an encrypted HttpOnly JWT cookie (3 days).
 - SEO: canonical URLs, Open Graph (first body image used as the share image), JSON-LD on record pages, sitemap with `lastmod`, RSS with `pubDate`, robots (blocks `/admin`, `/api`, `/search`). The footer date is the latest published update.
 
 ## Responsive and accessibility notes
+Verified in a real (headless) browser at 375, 768, 1024 and 1440 px: zero horizontal overflow, zero console/CSP errors. Mobile menu: tap targets >= 52 px, no overlaps, nothing off-screen, tap-outside/Escape closes it.
 - Mobile radial menu (`src/lib/radial.ts`): a quarter-circle fan for up to 4 destinations at the smallest radius where nothing overlaps or leaves the screen (checked for 360/375/414 px wide viewports); with more items (e.g. 5+ vocations) it becomes a scrollable vertical stack. The core button doubles as Back/Close. The full semantic nav stays in the DOM (visually hidden on mobile).
 - Desktop nav is grouped (WORK / LIBRARY / SITE) so it scales with more vocations.
 - Contrast: all text pairs pass WCAG AA in both themes (lowest: muted text on surface, 4.93:1). Decorative rules stay light; form controls and buttons use a separate `--control` border token (>= 3:1).
@@ -81,4 +82,4 @@ Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, se
 - Vocation slugs share the `/[section]` namespace with library collections; the CMS must reject colliding slugs.
 
 ## Next
-1. Browser pass (CSP + Google sign-in redirect, editor, widths, keyboard). 2. Draft preview, revision history, per-record SEO fields. 3. Real-key agent run, VPS dry run.
+1. Draft preview, revision history, per-record SEO fields. 2. Real-key agent run and the real Google sign-in on your domain. 3. VPS dry run (`DEPLOY.md`).

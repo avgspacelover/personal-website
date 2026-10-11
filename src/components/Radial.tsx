@@ -16,6 +16,7 @@ export function Radial({ groups }: { groups: Record<string, Item[]> }) {
   return (
     <div className={`radial${open ? " open" : ""}${pts ? "" : " stack"}`}>
       <button className="core" aria-expanded={open} aria-label={open ? (sub ? "Back to main menu" : "Close menu") : "Open navigation menu"} onClick={() => (!open ? setOpen(true) : sub ? setG("root") : close())}>{!open ? "MENU" : sub ? "BACK" : "CLOSE"}</button>
+      {open && <div className="scrim" onClick={close} aria-hidden="true" />}
       <div className="list">
         {items.map((it, i) => {
           const style = pts ? ({ "--x": `${pts[i].x}px`, "--y": `${pts[i].y}px` } as React.CSSProperties) : undefined;

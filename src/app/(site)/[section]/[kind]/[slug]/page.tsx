@@ -28,12 +28,12 @@ export default async function Detail(props: P) { const params = await props.para
     <h1 style={{ marginTop: ".5rem" }}>{e.title}</h1>
     <p className="lede">{e.summary}</p>
     <dl className="meta">
-      <dt className="mono">YEAR</dt><dd>{e.year}</dd>
+      {e.year && <><dt className="mono">YEAR</dt><dd>{e.year}</dd></>}
       {e.org && <><dt className="mono">ORGANIZATION</dt><dd>{e.org}</dd></>}
       {e.location && <><dt className="mono">LOCATION</dt><dd>{e.location}</dd></>}
       <dt className="mono">DOMAIN</dt><dd>{e.vocations.map(vocName).join(" / ")}</dd>
-      <dt className="mono">TECHNOLOGY</dt><dd>{e.tech.join(", ")}</dd>
-      <dt className="mono">STATUS</dt><dd>{e.status}</dd>
+      {e.tech.length > 0 && <><dt className="mono">TECHNOLOGY</dt><dd>{e.tech.join(", ")}</dd></>}
+      {e.status && <><dt className="mono">STATUS</dt><dd>{e.status}</dd></>}
     </dl>
     <div className="prose"><RichText body={e.body} /></div>
   </article>);
