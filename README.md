@@ -9,6 +9,10 @@ Next.js 14 (App Router) + TypeScript. Static-rendered public site: vocations, Ex
 
 Deploying to a VPS: see `DEPLOY.md`. The app has been exercised against both the embedded PGlite and a real PostgreSQL server (all migrations, public pages, admin CRUD, JSONB bodies, redirects, PDF, agent, uploads, export).
 
+## Site settings and caching
+`/admin/settings` edits the site name, homepage headline/intro, the "Currently" block, the About page (both rich text), a default description, an optional public contact email and "Elsewhere" links. Nothing is shown unless entered; blank fields use defaults; links must be http(s)/mailto. The row is included in the JSON export.
+Caching: public pages render per request (measured 18-34 ms TTFB with real Postgres, ~4 KB gzipped HTML), because the nonce-based CSP needs fresh HTML per request; static/ISR caching would mean weakening the CSP for no noticeable gain. Immutable caching is used for media and static assets, and the public resume PDF is cached in memory for 60 s. Client JS on the home page is ~175 KB gzipped (React 19 + Next runtime).
+
 ## Security (spec section 9)
 - **Auth:** Google sign-in only (Auth.js), email allowlist re-checked on every request, 24 h encrypted HttpOnly session cookie (Secure over HTTPS). `SESSIONS_VALID_AFTER` revokes all sessions. Every admin page/action/route authorizes server-side.
 - **Rate limiting + CSP:** `src/proxy.ts` (limits listed in `DEPLOY.md`; nonce-based CSP, `CSP_REPORT_ONLY=1` to soften). Static headers in `next.config.mjs`.
@@ -77,4 +81,4 @@ Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, se
 - Vocation slugs share the `/[section]` namespace with library collections; the CMS must reject colliding slugs.
 
 ## Next
-1. Import from export. 2. Browser review at 375/768/1024/1440 and a real-key agent run. 3. Deployment guide (VPS, Postgres, backups, reverse proxy).
+1. Browser pass (CSP + Google sign-in redirect, editor, widths, keyboard). 2. Draft preview, revision history, per-record SEO fields. 3. Real-key agent run, VPS dry run.

@@ -2,10 +2,10 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/Theme";
 import { Radial } from "@/components/Radial";
 import { collections } from "@/lib/content";
-import { getLastUpdated, getVocations } from "@/lib/queries";
+import { getLastUpdated, getSettings, getVocations } from "@/lib/queries";
 export const dynamic = "force-dynamic";
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
-  const [vocations, updated] = await Promise.all([getVocations(), getLastUpdated()]);
+  const [vocations, updated, settings] = await Promise.all([getVocations(), getLastUpdated(), getSettings()]);
   const groups = {
     root: [{ label: "Work", group: "work" }, { label: "Library", group: "library" }, { label: "Resume", href: "/resume" }, { label: "More", group: "more" }],
     work: vocations.map((v) => ({ label: v.name, href: `/${v.slug}` })),
@@ -14,7 +14,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   };
   return (<>
     <header className="top"><div className="wrap">
-      <Link href="/" className="brand">Personal Archive</Link>
+      <Link href="/" className="brand">{settings.siteName}</Link>
       <ThemeToggle />
       <nav className="main" aria-label="Primary">
         <div><span className="mono">WORK</span><ul>{vocations.map((v) => <li key={v.slug}><Link href={`/${v.slug}`}>{v.name}</Link></li>)}</ul></div>
@@ -23,7 +23,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       </nav>
     </div></header>
     <main className="wrap">{children}</main>
-    <footer><div className="wrap mono">{updated ? `UPDATED / ${updated.toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" }).toUpperCase()}` : "PERSONAL ARCHIVE"}</div></footer>
+    <footer><div className="wrap mono">{updated ? `UPDATED / ${updated.toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" }).toUpperCase()}` : settings.siteName.toUpperCase()}</div></footer>
     <Radial groups={groups} />
   </>);
 }

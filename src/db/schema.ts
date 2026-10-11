@@ -84,3 +84,11 @@ export const agentRun = pgTable("agent_run", {
 export const auditLog = pgTable("audit_log", {
   id: id(), at: timestamp("at", { withTimezone: true }).notNull().defaultNow(), actor: text("actor").notNull(), action: text("action").notNull(), detail: text("detail").notNull().default(""),
 });
+
+// Singleton row (id "main") holding site-wide text that used to be hardcoded. Empty values fall back to defaults in getSettings().
+export const siteSettings = pgTable("site_settings", {
+  id: text("id").primaryKey().default("main"), updatedAt: updatedAt(),
+  siteName: text("site_name").notNull().default(""), tagline: text("tagline").notNull().default(""), intro: text("intro").notNull().default(""),
+  currently: jsonb("currently").notNull().default({}), aboutBody: jsonb("about_body").notNull().default({}),
+  contactEmail: text("contact_email").notNull().default(""), links: jsonb("links").notNull().default([]), metaDescription: text("meta_description").notNull().default(""),
+});

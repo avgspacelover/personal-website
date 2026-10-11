@@ -1,11 +1,14 @@
+import { Elsewhere } from "@/components/Elsewhere";
+import { RichText } from "@/components/RichText";
+import { getSettings } from "@/lib/queries";
+import { toDoc } from "@/lib/richtext";
 export const metadata = { title: "About" };
-export default function About() {
+export default async function About() {
+  const s = await getSettings();
+  const has = toDoc(s.aboutBody).content.length > 0;
   return (<>
     <h1>About</h1>
-    <p className="lede">Placeholder: a short statement of who this archive belongs to.</p>
-    <section className="blk"><h2>Elsewhere</h2><ul className="rows">
-      <li><span className="mono">EMAIL</span><a href="mailto:you@example.com">you@example.com</a><span /></li>
-      <li><span className="mono">CODE</span><a href="https://github.com">GitHub</a><span /></li>
-    </ul></section>
+    {has ? <div className="prose"><RichText body={s.aboutBody} /></div> : <p className="lede">{s.intro}</p>}
+    <Elsewhere s={s} />
   </>);
 }

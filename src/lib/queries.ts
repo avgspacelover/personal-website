@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, inArray, max } from "drizzle-orm";
-import { getDb, vocation, entry, vocationEntry, libraryItem, mediaAsset, skill, education } from "../db";
+import { getDb, vocation, entry, vocationEntry, libraryItem, mediaAsset, siteSettings, skill, education } from "../db";
 import { mediaUrl, variantKeys } from "./storage";
 import { collections, type Entry, type LibraryItem, type Vocation } from "./content";
 import { docText, toDoc } from "./richtext";
@@ -78,4 +78,18 @@ export async function searchPublic(q: string): Promise<Hit[]> {
     if (s) hits.push({ type: c.name.toUpperCase(), title: i.title, href: `/${c.slug}`, note: i.note, score: s });
   }));
   return hits.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title)).slice(0, 50);
+}
+
+export type Settings = { siteName: string; tagline: string; intro: string; currently: unknown; aboutBody: unknown; contactEmail: string; links: { label: string; url: string }[]; metaDescription: string };
+export const SETTINGS_DEFAULTS: Settings = {
+  siteName: "Personal Archive", tagline: "Software, systems, and ideas, filed by discipline.",
+  intro: "Professional work is organized by vocation. Essays, books, films, and communities live separately in the library.",
+  currently: [], aboutBody: [], contactEmail: "", links: [], metaDescription: "Professional work by vocation, and a separate personal library.",
+};
+const safeUrl = (u: string) => /^(https?:\/\/|mailto:)/i.test(u);
+export async function getSettings(): Promise<Settings> {
+  const [r] = await (await getDb()).select().from(siteSettings).limit(1);
+  if (!r) return SETTINGS_DEFAULTS;
+  const links = (Array.isArray(r.links) ? r.links : []).flatMap((l: any) => (l && typeof l.label === "string" && typeof l.url === "string" && safeUrl(l.url) ? [{ label: l.label.slice(0, 40), url: l.url }] : [])).slice(0, 10);
+  return { siteName: r.siteName || SETTINGS_DEFAULTS.siteName, tagline: r.tagline || SETTINGS_DEFAULTS.tagline, intro: r.intro || SETTINGS_DEFAULTS.intro, currently: r.currently, aboutBody: r.aboutBody, contactEmail: r.contactEmail, links, metaDescription: r.metaDescription || SETTINGS_DEFAULTS.metaDescription };
 }
