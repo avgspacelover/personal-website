@@ -11,7 +11,10 @@ export default async function Resume() {
     <h1>{m.fullName || "Resume"}</h1>
     {m.contact && <p className="mono">{m.contact}</p>}
     {m.headline && <p className="lede">{m.headline}</p>}
-    <p><a className="tbtn big" href="/resume/pdf" style={{ textDecoration: "none", display: "inline-block" }}>DOWNLOAD PDF</a></p>
+    <p style={{ display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
+      <a className="tbtn big" href="/resume/pdf?template=classic" style={{ textDecoration: "none" }}>DOWNLOAD PDF / SINGLE COLUMN</a>
+      <a className="tbtn big" href="/resume/pdf?template=deedy" style={{ textDecoration: "none" }}>DOWNLOAD PDF / TWO COLUMN</a>
+    </p>
     {m.sections.map((sec) => <section className="blk" key={sec.key}><h2>{sec.title}</h2><ul className="rows">
       {sec.items.map((i, n) => <li key={n}><span className="mono">{i.period ?? ""}</span><span>{i.href ? <Link href={i.href}>{i.title}</Link> : i.title}{i.sub ? `, ${i.sub}` : ""}</span><span className="mono">{i.location ?? i.meta ?? ""}</span>
         {i.bullets.length > 0 && <div style={{ gridColumn: 2 }}><ul style={{ margin: 0, paddingLeft: "1.1rem" }}>{i.bullets.map((b, k) => <li key={k} style={{ display: "list-item", border: 0, padding: 0 }}>{b}</li>)}</ul></div>}</li>)}

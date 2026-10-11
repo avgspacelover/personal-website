@@ -2,7 +2,8 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { getDb, education, entry, resume, resumeItem, skill, vocation, vocationEntry } from "../db";
 
 export const SECTIONS = ["education", "experience", "projects", "skills"] as const;
-export const TEMPLATES = ["classic"] as const;
+export const TEMPLATES = ["classic", "deedy"] as const;
+export const TEMPLATE_LABELS: Record<string, string> = { classic: "Single column (Jake-style)", deedy: "Two column (Deedy CV)" };
 export type RItem = { title: string; sub?: string; period?: string; location?: string; meta?: string; bullets: string[]; href?: string };
 export type RSection = { key: string; title: string; items: RItem[] };
 export type ResumeModel = { id: string; name: string; template: string; pages: string; fullName: string; contact: string; headline: string; sections: RSection[] };

@@ -1,7 +1,9 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import PDFDocument from "pdfkit";
-import type { ResumeModel, RItem } from "./resume";
+import { onceDeedy } from "./resume-pdf-deedy";
+import { linkOf } from "./pdf-util";
+import { TEMPLATES, type ResumeModel, type RItem } from "./resume";
 
 // Layout modelled on the widely used "Jake's Resume" template: US Letter, 0.5in margins, centred small-caps name, one-line contact row,
 // small-caps section headings over a thin rule, two-line bold/italic entry headers with right-aligned dates, compact bullets,
@@ -16,9 +18,6 @@ function fontFiles() {
   const f = { r: path.join(dir, "cmu-serif-500-roman.ttf"), b: path.join(dir, "cmu-serif-700-roman.ttf"), i: path.join(dir, "cmu-serif-500-italic.ttf") };
   return Object.values(f).every(existsSync) ? f : null;
 }
-const linkOf = (s: string) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) ? `mailto:${s}` : /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(s) ? (s.startsWith("http") ? s : `https://${s}`) : null;
-
 function once(m: ResumeModel, k: number): Promise<{ buffer: Buffer; pages: number }> {
   return new Promise((resolve, reject) => {
     const title = m.fullName || m.name;
@@ -101,9 +100,12 @@ function once(m: ResumeModel, k: number): Promise<{ buffer: Buffer; pages: numbe
 }
 
 // "One page" shrinks type and spacing in small steps until it fits; if it still spills at the smallest readable size, `fits` is false.
-export async function renderResumePdf(m: ResumeModel) {
+// `template` overrides the version's own template so the same resume can be downloaded in either format.
+export async function renderResumePdf(m: ResumeModel, template?: string) {
+  const t = (TEMPLATES as readonly string[]).includes(template ?? "") ? template : m.template;
+  const draw = t === "deedy" ? onceDeedy : once;
   const scales = m.pages === "one" ? [1, 0.96, 0.92, 0.88, 0.84, 0.8] : [1];
   let last = { buffer: Buffer.alloc(0), pages: 0 }, scale = 1;
-  for (scale of scales) { last = await once(m, scale); if (last.pages === 1) break; }
-  return { ...last, scale, fits: m.pages !== "one" || last.pages === 1 };
+  for (scale of scales) { last = await draw(m, scale); if (last.pages === 1) break; }
+  return { ...last, scale, fits: m.pages !== "one" || last.pages === 1, template: t };
 }
