@@ -9,6 +9,11 @@ Next.js 14 (App Router) + TypeScript. Static-rendered public site: vocations, Ex
 
 Deploying to a VPS: see `DEPLOY.md`. The app has been exercised against both the embedded PGlite and a real PostgreSQL server (all migrations, public pages, admin CRUD, JSONB bodies, redirects, PDF, agent, uploads, export).
 
+## Draft preview, revision history, SEO fields (projects and experience)
+- **Preview:** "Preview in the public layout" on a record's editor opens `/preview/<id>` (admin only, noindex, blocked in robots.txt). It uses the same `EntryView` component as the public page, for any status, and shows the last *saved* version (not unsaved edits in the editor).
+- **History:** every save that actually changes something first stores the previous version (who, when). Re-saving unchanged content stores nothing. The newest 30 are kept per record. **Restore content** brings back title, summary, body, tags, period/phase/location and SEO fields, but deliberately not slug, publish status or vocations (those have side effects: URLs, redirects, visibility). The current content is saved before a restore, so a restore can be undone. Deleting a record deletes its history. Not covered by history: vocations, library items, settings.
+- **SEO (optional, blank = automatic):** search/share title (70), description (160, default the summary), social image (a media-library image, default the first body image) and a canonical URL override (http/https only). An override points search engines at the other copy and removes the page from the sitemap.
+
 ## Site settings and caching
 `/admin/settings` edits the site name, homepage headline/intro, the "Currently" block, the About page (both rich text), a default description, an optional public contact email and "Elsewhere" links. Nothing is shown unless entered; blank fields use defaults; links must be http(s)/mailto. The row is included in the JSON export.
 Caching: public pages render per request (measured 18-34 ms TTFB with real Postgres, ~4 KB gzipped HTML), because the nonce-based CSP needs fresh HTML per request; static/ISR caching would mean weakening the CSP for no noticeable gain. Immutable caching is used for media and static assets, and the public resume PDF is cached in memory for 60 s. Client JS on the home page is ~175 KB gzipped (React 19 + Next runtime).
@@ -82,4 +87,4 @@ Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, se
 - Vocation slugs share the `/[section]` namespace with library collections; the CMS must reject colliding slugs.
 
 ## Next
-1. Draft preview, revision history, per-record SEO fields. 2. Real-key agent run and the real Google sign-in on your domain. 3. VPS dry run (`DEPLOY.md`).
+1. Real-key agent run and real Google sign-in on your domain. 2. VPS dry run (`DEPLOY.md`). 3. Optional: previews/history for vocations, library and settings; more resume templates; command palette.

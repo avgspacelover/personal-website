@@ -11,16 +11,26 @@ export async function getVocations(): Promise<Vocation[]> {
 }
 
 // Published entries with their published vocations (primary first). Data volume is small, so vocation filtering happens in JS.
+const toEntry = (r: typeof entry.$inferSelect, vocations: string[]): Entry => ({
+  id: r.id, slug: r.slug, kind: r.kind, title: r.title, org: r.organization ?? undefined, summary: r.summary, year: r.period, status: r.phase, tech: r.tech,
+  body: r.body, location: r.location || undefined, updated: r.updatedAt, vocations,
+  seoTitle: r.seoTitle || undefined, seoDescription: r.seoDescription || undefined, seoImage: r.seoImage ?? undefined, canonical: r.canonicalUrl || undefined,
+});
+// Admin preview only: any publish status, any vocation status.
+export async function getEntryAnyStatus(id: string) {
+  const db = await getDb();
+  const [r] = await db.select().from(entry).where(eq(entry.id, id)).limit(1);
+  if (!r) return null;
+  const links = await db.select({ slug: vocation.slug }).from(vocationEntry).innerJoin(vocation, eq(vocation.id, vocationEntry.vocationId)).where(eq(vocationEntry.entryId, id)).orderBy(desc(vocationEntry.isPrimary), asc(vocationEntry.position));
+  return { entry: toEntry(r, links.map((l) => l.slug)), publishStatus: r.status };
+}
 export async function getEntries(opts: { vocation?: string; kind?: Entry["kind"]; featured?: boolean } = {}): Promise<Entry[]> {
   const db = await getDb();
   const rows = await db.select().from(entry).where(and(eq(entry.status, "published"), opts.kind ? eq(entry.kind, opts.kind) : undefined, opts.featured ? eq(entry.featured, true) : undefined)).orderBy(asc(entry.position));
   const links = await db.select({ entryId: vocationEntry.entryId, slug: vocation.slug }).from(vocationEntry)
     .innerJoin(vocation, eq(vocation.id, vocationEntry.vocationId)).where(eq(vocation.status, "published"))
     .orderBy(desc(vocationEntry.isPrimary), asc(vocationEntry.position));
-  const out = rows.map((r): Entry => ({
-    id: r.id, slug: r.slug, kind: r.kind, title: r.title, org: r.organization ?? undefined, summary: r.summary, year: r.period, status: r.phase, tech: r.tech,
-    body: r.body, location: r.location || undefined, updated: r.updatedAt, vocations: links.filter((l) => l.entryId === r.id).map((l) => l.slug),
-  }));
+  const out = rows.map((r) => toEntry(r, links.filter((l) => l.entryId === r.id).map((l) => l.slug)));
   return opts.vocation ? out.filter((e) => e.vocations.includes(opts.vocation!)) : out.filter((e) => e.vocations.length > 0);
 }
 

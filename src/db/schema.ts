@@ -13,6 +13,8 @@ export const vocation = pgTable("vocation", {
 // Experience and Project share one table (kind column). Same fields, one CRUD path, one canonical record each.
 export const entry = pgTable("entry", {
   id: id(), updatedAt: updatedAt(), kind: kind("kind").notNull(), slug: text("slug").notNull(), title: text("title").notNull(), organization: text("organization"), location: text("location").notNull().default(""),
+  seoTitle: text("seo_title").notNull().default(""), seoDescription: text("seo_description").notNull().default(""), canonicalUrl: text("canonical_url").notNull().default(""),
+  seoImage: text("seo_image").references(() => mediaAsset.key, { onDelete: "set null" }),
   summary: text("summary").notNull().default(""), period: text("period").notNull().default(""), phase: text("phase").notNull().default(""),
   tech: text("tech").array().notNull().default([]), body: jsonb("body").notNull().default([]),
   position: integer("position").notNull().default(0), featured: boolean("featured").notNull().default(false),
@@ -91,4 +93,11 @@ export const siteSettings = pgTable("site_settings", {
   siteName: text("site_name").notNull().default(""), tagline: text("tagline").notNull().default(""), intro: text("intro").notNull().default(""),
   currently: jsonb("currently").notNull().default({}), aboutBody: jsonb("about_body").notNull().default({}),
   contactEmail: text("contact_email").notNull().default(""), links: jsonb("links").notNull().default([]), metaDescription: text("meta_description").notNull().default(""),
+});
+
+// Previous versions of a record, saved automatically BEFORE each change that alters it (newest 30 kept per record).
+export const revision = pgTable("revision", {
+  id: id(), at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  entryId: uuid("entry_id").notNull().references(() => entry.id, { onDelete: "cascade" }),
+  actor: text("actor").notNull(), note: text("note").notNull().default(""), snapshot: jsonb("snapshot").notNull(),
 });

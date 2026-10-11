@@ -10,6 +10,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     row("/", home ?? undefined), row("/about"), row("/resume", latest(entries.map((e) => e.updated))), row("/search"),
     ...vocations.map((v) => row(`/${v.slug}`, latest([v.updated, ...entries.filter((e) => e.vocations.includes(v.slug)).map((e) => e.updated)]))),
     ...collections.map((c, n) => row(`/${c.slug}`, latest(libs[n].map((i) => i.updated)))),
-    ...entries.map((e) => row(entryHref(e), e.updated)),
+    ...entries.filter((e) => !e.canonical).map((e) => row(entryHref(e), e.updated)),
   ].filter((r) => r.url !== site.url + "/search");
 }
