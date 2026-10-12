@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { COLLECTIONS, RECS } from "@/lib/library";
 import { UUID } from "@/lib/slug";
 import { deleteItem, saveItem } from "../../actions";
-const msg: Record<string, string> = { title: "Title is required.", url: "URL must start with https://, http:// or mailto:.", image: "Choose an image from the media library.", confirm: "Tick the confirmation box to delete." };
+const msg: Record<string, string> = { title: "Title is required.", url: "URL must start with https://, http:// or mailto:.", image: "Choose an image from the media library.", finished: "Enter a four-digit year (for example 2026).", confirm: "Tick the confirmation box to delete." };
 export default async function Edit(props: { params: Promise<{ collection: string; id: string }>; searchParams: Promise<{ error?: string }> }) { const params = await props.params; const searchParams = await props.searchParams;
   await requireAdmin();
   const cfg = COLLECTIONS[params.collection];
@@ -26,6 +26,7 @@ export default async function Edit(props: { params: Promise<{ collection: string
       {F("creator", cfg.creator, <input id="creator" name="creator" defaultValue={r?.creator} />)}
       {cfg.url && F("url", cfg.url, <input id="url" name="url" type="url" defaultValue={r?.url ?? ""} />)}
       {cfg.year && F("year", cfg.year, <input id="year" name="year" defaultValue={r?.year ?? ""} />)}
+      {cfg.finished && F("finished", cfg.finished + " (FOR THE YEARLY COUNTS ON MILESTONES)", <input id="finished" name="finished" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder="2026" defaultValue={r?.finished ?? ""} />)}
       {cfg.rating && F("rating", "RECOMMENDATION", <select id="rating" name="rating" defaultValue={r?.rating ?? ""}><option value="">Unrated</option>{RECS.map((x) => <option key={x}>{x}</option>)}</select>)}
       {cfg.image && F("image", cfg.image, <select id="image" name="image" defaultValue={r?.image ?? ""}><option value="">None</option>{media.map((m) => <option key={m.key} value={m.key}>{m.name || m.key}{m.alt ? "" : " (no alt text)"}</option>)}</select>)}
       {F("notes", cfg.notes, <textarea id="notes" name="notes" rows={5} defaultValue={r?.notes} />)}

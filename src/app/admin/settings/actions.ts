@@ -16,7 +16,7 @@ export async function saveSettings(fd: FormData) {
     const [label, ...rest] = line.split("|"), url = rest.join("|").trim();
     if (label?.trim() && /^(https?:\/\/|mailto:)/i.test(url) && url.length <= 500 && links.length < 10) links.push({ label: label.trim().slice(0, 40), url });
   }
-  const v = { siteName: str(fd, "siteName", 100), tagline: str(fd, "tagline", 200), intro: str(fd, "intro", 400), metaDescription: str(fd, "metaDescription", 300), contactEmail: email, links, currently, aboutBody };
+  const v = { milestonesTitle: str(fd, "milestonesTitle", 40), milestonesIntro: str(fd, "milestonesIntro", 300), siteName: str(fd, "siteName", 100), tagline: str(fd, "tagline", 200), intro: str(fd, "intro", 400), metaDescription: str(fd, "metaDescription", 300), contactEmail: email, links, currently, aboutBody };
   await (await getDb()).insert(siteSettings).values({ id: "main", ...v }).onConflictDoUpdate({ target: siteSettings.id, set: v });
   redirect("/admin/settings?saved=1");
 }

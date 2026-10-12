@@ -1,7 +1,7 @@
-import { and, asc, desc, eq, inArray, max } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, max } from "drizzle-orm";
 import { getDb, vocation, entry, vocationEntry, libraryItem, mediaAsset, siteSettings, skill, education } from "../db";
 import { mediaUrl, variantKeys } from "./storage";
-import { collections, type Entry, type LibraryItem, type Vocation } from "./content";
+import { collections, type Accomplishment, type Entry, type LibraryItem, type Stat, type Vocation } from "./content";
 import { docText, toDoc } from "./richtext";
 import { parseTerms, score } from "./search";
 
@@ -65,6 +65,8 @@ export async function getLastUpdated(): Promise<Date | null> {
     db.select({ d: max(entry.updatedAt) }).from(entry).where(eq(entry.status, "published")),
     db.select({ d: max(libraryItem.updatedAt) }).from(libraryItem).where(eq(libraryItem.status, "published")),
     db.select({ d: max(vocation.updatedAt) }).from(vocation).where(eq(vocation.status, "published")),
+    db.select({ d: max(accomplishment.updatedAt) }).from(accomplishment).where(eq(accomplishment.status, "published")),
+    db.select({ d: max(stat.updatedAt) }).from(stat).where(eq(stat.status, "published")),
   ]);
   const ds = rows.flatMap((r) => (r[0]?.d ? [new Date(r[0].d as unknown as string).getTime()] : []));
   return ds.length ? new Date(Math.max(...ds)) : null;
@@ -83,6 +85,7 @@ export async function searchPublic(q: string): Promise<Hit[]> {
     const s = score([[e.title, 5], [e.org ?? "", 3], [e.tech.join(" "), 3], [e.summary, 2], [e.vocations.map((v) => names.get(v) ?? "").join(" "), 2], [docText(toDoc(e.body)), 1]], terms);
     if (s) hits.push({ type: e.kind === "projects" ? "PROJECT" : "EXPERIENCE", title: e.title, href: `/${e.vocations[0]}/${e.kind}/${e.slug}`, note: e.summary, score: s });
   }
+  for (const a of await getAccomplishments()) { const s = score([[a.title, 5], [a.vocation?.name ?? "", 3], [a.figure, 3], [a.detail, 2], [a.year, 1]], terms); if (s) hits.push({ type: "ACCOMPLISHMENT", title: a.title, href: "/milestones", note: a.detail, score: s }); }
   collections.forEach((c, n) => libs[n].forEach((i) => {
     const s = score([[i.title, 5], [i.by, 3], [(i.tags ?? []).join(" "), 3], [i.note, 2], [i.year ?? "", 1]], terms);
     if (s) hits.push({ type: c.name.toUpperCase(), title: i.title, href: `/${c.slug}`, note: i.note, score: s });
@@ -90,8 +93,9 @@ export async function searchPublic(q: string): Promise<Hit[]> {
   return hits.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title)).slice(0, 50);
 }
 
-export type Settings = { siteName: string; tagline: string; intro: string; currently: unknown; aboutBody: unknown; contactEmail: string; links: { label: string; url: string }[]; metaDescription: string };
+export type Settings = { milestonesTitle: string; milestonesIntro: string; siteName: string; tagline: string; intro: string; currently: unknown; aboutBody: unknown; contactEmail: string; links: { label: string; url: string }[]; metaDescription: string };
 export const SETTINGS_DEFAULTS: Settings = {
+  milestonesTitle: "Milestones", milestonesIntro: "Accomplishments and figures, kept up to date by hand.",
   siteName: "Personal Archive", tagline: "Software, systems, and ideas, filed by discipline.",
   intro: "Professional work is organized by vocation. Essays, books, films, and communities live separately in the library.",
   currently: [], aboutBody: [], contactEmail: "", links: [], metaDescription: "Professional work by vocation, and a separate personal library.",
@@ -101,5 +105,31 @@ export async function getSettings(): Promise<Settings> {
   const [r] = await (await getDb()).select().from(siteSettings).limit(1);
   if (!r) return SETTINGS_DEFAULTS;
   const links = (Array.isArray(r.links) ? r.links : []).flatMap((l: any) => (l && typeof l.label === "string" && typeof l.url === "string" && safeUrl(l.url) ? [{ label: l.label.slice(0, 40), url: l.url }] : [])).slice(0, 10);
-  return { siteName: r.siteName || SETTINGS_DEFAULTS.siteName, tagline: r.tagline || SETTINGS_DEFAULTS.tagline, intro: r.intro || SETTINGS_DEFAULTS.intro, currently: r.currently, aboutBody: r.aboutBody, contactEmail: r.contactEmail, links, metaDescription: r.metaDescription || SETTINGS_DEFAULTS.metaDescription };
+  return { milestonesTitle: r.milestonesTitle || SETTINGS_DEFAULTS.milestonesTitle, milestonesIntro: r.milestonesIntro || SETTINGS_DEFAULTS.milestonesIntro, siteName: r.siteName || SETTINGS_DEFAULTS.siteName, tagline: r.tagline || SETTINGS_DEFAULTS.tagline, intro: r.intro || SETTINGS_DEFAULTS.intro, currently: r.currently, aboutBody: r.aboutBody, contactEmail: r.contactEmail, links, metaDescription: r.metaDescription || SETTINGS_DEFAULTS.metaDescription };
+}
+
+import { accomplishment, stat } from "../db";
+const httpUrl = (u: string | null) => (u && /^https?:\/\//i.test(u) ? u : undefined);
+export async function getAccomplishments(opts: { vocation?: string } = {}): Promise<Accomplishment[]> {
+  const db = await getDb();
+  const rows = await db.select({ a: accomplishment, vs: vocation.slug, vn: vocation.name, vstat: vocation.status }).from(accomplishment)
+    .leftJoin(vocation, eq(vocation.id, accomplishment.vocationId)).where(eq(accomplishment.status, "published")).orderBy(asc(accomplishment.position), desc(accomplishment.year));
+  const out = rows.map(({ a, vs, vn, vstat }): Accomplishment => ({ id: a.id, title: a.title, detail: a.detail, year: a.year, figure: a.figure, url: httpUrl(a.url), vocation: vs && vstat === "published" ? { slug: vs, name: vn! } : undefined }));
+  return opts.vocation ? out.filter((x) => x.vocation?.slug === opts.vocation) : out;
+}
+export async function getStats(): Promise<Stat[]> {
+  const rows = await (await getDb()).select().from(stat).where(eq(stat.status, "published")).orderBy(asc(stat.position), asc(stat.label));
+  return rows.map((r) => ({ id: r.id, label: r.label, value: r.value, period: r.period, note: r.note, url: httpUrl(r.url) }));
+}
+export const READING = ["essays", "books", "movies", "series"] as const;
+// Counts of published library items by the year they were read/watched (library_item.finished), newest year first.
+export async function getReadingTable() {
+  const rows = await (await getDb()).select({ y: libraryItem.finished, c: libraryItem.collection, n: count() }).from(libraryItem)
+    .where(and(eq(libraryItem.status, "published"), inArray(libraryItem.collection, [...READING]))).groupBy(libraryItem.finished, libraryItem.collection);
+  const by = new Map<string, Record<string, number>>(), totals: Record<string, number> = Object.fromEntries(READING.map((k) => [k, 0]));
+  for (const r of rows) {
+    if (!r.y) continue;
+    const e = by.get(r.y) ?? Object.fromEntries(READING.map((k) => [k, 0])); e[r.c] = r.n; by.set(r.y, e); totals[r.c] += r.n;
+  }
+  return { years: [...by].sort(([a], [b]) => b.localeCompare(a)).map(([year, v]) => ({ year, ...v }) as { year: string } & Record<string, number>), totals };
 }

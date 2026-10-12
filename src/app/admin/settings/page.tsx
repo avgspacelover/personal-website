@@ -23,6 +23,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       {F("tagline", "HOMEPAGE HEADLINE", <input id="tagline" name="tagline" maxLength={200} defaultValue={s.tagline} />)}
       {F("intro", "HOMEPAGE INTRO", <textarea id="intro" name="intro" rows={3} maxLength={400} defaultValue={s.intro} />)}
       {F("metaDescription", "SEARCH/SHARE DESCRIPTION (DEFAULT)", <textarea id="metaDescription" name="metaDescription" rows={2} maxLength={300} defaultValue={s.metaDescription} />)}
+      {F("milestonesTitle", "NAME OF THE ACCOMPLISHMENTS / STATISTICS TAB (DEFAULT: MILESTONES)", <input id="milestonesTitle" name="milestonesTitle" maxLength={40} defaultValue={s.milestonesTitle} />)}
+      {F("milestonesIntro", "INTRO UNDER THAT TAB'S TITLE", <textarea id="milestonesIntro" name="milestonesIntro" rows={2} maxLength={300} defaultValue={s.milestonesIntro} />)}
       <span className="mono">CURRENTLY (HOMEPAGE: WHAT YOU ARE WORKING ON, LEARNING, READING)</span>
       <RichEditor name="currently" initial={toDoc(s.currently)} media={media} />
       <span className="mono">ABOUT PAGE</span>

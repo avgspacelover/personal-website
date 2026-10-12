@@ -1,4 +1,6 @@
 // Seed content. Replace with DB queries once the CMS lands (see db/schema.sql).
+export type Accomplishment = { id: string; title: string; detail: string; year: string; figure: string; url?: string; vocation?: { slug: string; name: string } };
+export type Stat = { id: string; label: string; value: string; period: string; note: string; url?: string };
 export type Vocation = { slug: string; name: string; intro: string; updated?: Date };
 export type Entry = { id?: string; slug: string; kind: "projects" | "experience"; title: string; org?: string; summary: string; year: string; status: string; tech: string[]; vocations: string[]; location?: string; seoTitle?: string; seoDescription?: string; seoImage?: string; canonical?: string; body: unknown; updated?: Date };
 export type LibraryItem = { title: string; by: string; note: string; rating: string; year?: string; url?: string; tags?: string[]; updated?: Date; image?: { url: string; alt: string } };
@@ -22,13 +24,14 @@ export const entries: Entry[] = [
 export const library: Record<string, LibraryItem[]> = {
   essays: [{ title: "Placeholder essay", by: "Author", note: "Why it stuck.", rating: "Essential", url: "https://example.com" }],
   books: [{ title: "Placeholder book", by: "Author", note: "Short note.", rating: "Recommended" }],
+  series: [{ title: "Placeholder series", by: "Creator", note: "Short note.", rating: "Recommended" }],
   movies: [{ title: "Placeholder film", by: "Director", year: "1999", note: "Short note.", rating: "Recommended" }],
   community: [{ title: "Placeholder community", by: "Member since 2024", note: "What it is.", rating: "Active", url: "https://example.com" }],
 };
 
 export const collections = [
   { slug: "essays", name: "Essays" }, { slug: "books", name: "Books" },
-  { slug: "movies", name: "Movies" }, { slug: "community", name: "Community" },
+  { slug: "movies", name: "Movies" }, { slug: "series", name: "Series" }, { slug: "community", name: "Community" },
 ];
 export const inVocation = (slug: string) => entries.filter((e) => e.vocations.includes(slug));
 export const vocName = (slug: string) => vocations.find((v) => v.slug === slug)?.name ?? slug;

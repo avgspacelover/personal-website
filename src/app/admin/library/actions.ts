@@ -19,6 +19,8 @@ export async function saveItem(fd: FormData) {
   if (!title) back("title");
   const url = cfg.url ? str(fd, "url", 501) : "";
   if (url && (url.length > 500 || !/^(https?:\/\/|mailto:)/i.test(url))) back("url"); // scheme allowlist also blocks javascript: // blocks javascript: and other schemes
+  const finished = cfg.finished ? str(fd, "finished", 4) : "";
+  if (finished && !/^\d{4}$/.test(finished)) back("finished");
   const db = await getDb();
   let image: string | null = null;
   if (cfg.image && str(fd, "image")) {
@@ -27,7 +29,7 @@ export async function saveItem(fd: FormData) {
     image = a.key;
   }
   const values = {
-    collection, title, creator: str(fd, "creator", 200), url: url || null, year: cfg.year ? str(fd, "year", 30) || null : null, notes: str(fd, "notes"),
+    collection, title, creator: str(fd, "creator", 200), url: url || null, year: cfg.year ? str(fd, "year", 30) || null : null, finished: finished || null, notes: str(fd, "notes"),
     tags: str(fd, "tags", 600).split(",").map((s) => s.trim().slice(0, 40)).filter(Boolean).slice(0, 15), image,
     position: Number.parseInt(str(fd, "position"), 10) || 0, status: STATUS.find((s) => s === fd.get("status")) ?? "draft",
     ...(cfg.rating ? { rating: RECS.find((r) => r === fd.get("rating")) ?? "" } : {}),

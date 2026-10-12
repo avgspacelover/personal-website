@@ -1,4 +1,4 @@
-import { getDb, siteSettings, vocation, entry, vocationEntry, libraryItem, mediaAsset, skill, education, redirectRule } from "../db";
+import { accomplishment, getDb, siteSettings, stat, vocation, entry, vocationEntry, libraryItem, mediaAsset, skill, education, redirectRule } from "../db";
 // Full structured export. Rich text stays as ProseMirror JSON. Media FILES are not included (copy MEDIA_DIR separately); keys tie them to records.
 export async function buildExport() {
   const db = await getDb();
@@ -6,12 +6,12 @@ export async function buildExport() {
     db.select().from(vocation), db.select().from(entry), db.select().from(vocationEntry), db.select().from(libraryItem),
     db.select().from(mediaAsset), db.select().from(skill), db.select().from(education), db.select().from(redirectRule),
   ]);
-  const settings = await db.select().from(siteSettings);
+  const settings = await db.select().from(siteSettings), accomplishments = await db.select().from(accomplishment), stats = await db.select().from(stat);
   const slug = new Map(vocs.map((v) => [v.id, v.slug]));
   return {
     format: "personal-archive-export", version: 1, exportedAt: new Date().toISOString(),
     vocations: vocs.map(({ id, ...v }) => ({ ...v, id })),
     entries: entries.map((e) => ({ ...e, vocations: links.filter((l) => l.entryId === e.id).sort((a, b) => a.position - b.position).map((l) => ({ slug: slug.get(l.vocationId), primary: l.isPrimary })) })),
-    library: lib, settings, media, skills, education: edu, redirects,
+    library: lib, settings, accomplishments, stats, media, skills, education: edu, redirects,
   };
 }

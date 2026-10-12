@@ -30,7 +30,7 @@ export const vocationEntry = pgTable("vocation_entry", {
 export const libraryItem = pgTable("library_item", {
   id: id(), updatedAt: updatedAt(), collection: text("collection").notNull(), title: text("title").notNull(), creator: text("creator").notNull().default(""),
   url: text("url"), year: text("year"), rating: text("rating").notNull().default(""), notes: text("notes").notNull().default(""),
-  tags: text("tags").array().notNull().default([]), image: text("image").references(() => mediaAsset.key, { onDelete: "set null" }),
+  tags: text("tags").array().notNull().default([]), image: text("image").references(() => mediaAsset.key, { onDelete: "set null" }), finished: text("finished"),
   position: integer("position").notNull().default(0), status: status("status").notNull().default("draft"),
 });
 
@@ -93,6 +93,7 @@ export const siteSettings = pgTable("site_settings", {
   siteName: text("site_name").notNull().default(""), tagline: text("tagline").notNull().default(""), intro: text("intro").notNull().default(""),
   currently: jsonb("currently").notNull().default({}), aboutBody: jsonb("about_body").notNull().default({}),
   contactEmail: text("contact_email").notNull().default(""), links: jsonb("links").notNull().default([]), metaDescription: text("meta_description").notNull().default(""),
+  milestonesTitle: text("milestones_title").notNull().default(""), milestonesIntro: text("milestones_intro").notNull().default(""),
 });
 
 // Previous versions of a record, saved automatically BEFORE each change that alters it (newest 30 kept per record).
@@ -100,4 +101,15 @@ export const revision = pgTable("revision", {
   id: id(), at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
   entryId: uuid("entry_id").notNull().references(() => entry.id, { onDelete: "cascade" }),
   actor: text("actor").notNull(), note: text("note").notNull().default(""), snapshot: jsonb("snapshot").notNull(),
+});
+
+// Milestones page: accomplishments (optionally tied to one vocation) and free-form figures. Reading/watching counts are derived from library_item.finished.
+export const accomplishment = pgTable("accomplishment", {
+  id: id(), updatedAt: updatedAt(), title: text("title").notNull(), detail: text("detail").notNull().default(""), year: text("year").notNull().default(""),
+  figure: text("figure").notNull().default(""), url: text("url"), vocationId: uuid("vocation_id").references(() => vocation.id, { onDelete: "set null" }),
+  position: integer("position").notNull().default(0), status: status("status").notNull().default("draft"),
+});
+export const stat = pgTable("stat", {
+  id: id(), updatedAt: updatedAt(), label: text("label").notNull(), value: text("value").notNull(), period: text("period").notNull().default(""), note: text("note").notNull().default(""),
+  url: text("url"), position: integer("position").notNull().default(0), status: status("status").notNull().default("draft"),
 });

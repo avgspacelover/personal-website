@@ -9,6 +9,13 @@ Next.js 14 (App Router) + TypeScript. Static-rendered public site: vocations, Ex
 
 Deploying to a VPS: see `DEPLOY.md`. The app has been exercised against both the embedded PGlite and a real PostgreSQL server (all migrations, public pages, admin CRUD, JSONB bodies, redirects, PDF, agent, uploads, export).
 
+## Milestones tab (accomplishments and statistics)
+Public page `/milestones` (default name **Milestones**; rename it in Site settings, the URL stays), edited at `/admin/milestones`:
+- **Accomplishments:** title, optional headline figure (e.g. "1st place", "400 stars"), detail, year, optional http(s) link and an optional vocation. Ones tied to a vocation also appear on that vocation's page. Found by search.
+- **Reading and watching by year:** automatic. Library items (essays, books, movies, and the new **Series** collection for TV) have a "year read / watched" field; the page counts published items per year and in total, with a "this year so far" line. Items without that year are not counted.
+- **Figures:** free-form numbers (label, value, period, note, optional link): commits, talks given, anything.
+All three honour draft/published status, and the data is in the JSON export.
+
 ## Draft preview, revision history, SEO fields (projects and experience)
 - **Preview:** "Preview in the public layout" on a record's editor opens `/preview/<id>` (admin only, noindex, blocked in robots.txt). It uses the same `EntryView` component as the public page, for any status, and shows the last *saved* version (not unsaved edits in the editor).
 - **History:** every save that actually changes something first stores the previous version (who, when). Re-saving unchanged content stores nothing. The newest 30 are kept per record. **Restore content** brings back title, summary, body, tags, period/phase/location and SEO fields, but deliberately not slug, publish status or vocations (those have side effects: URLs, redirects, visibility). The current content is saved before a restore, so a restore can be undone. Deleting a record deletes its history. Not covered by history: vocations, library items, settings.
