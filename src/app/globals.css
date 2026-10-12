@@ -70,3 +70,4 @@ table.ledger th:first-child,table.ledger td:first-child{text-align:left}
 table.ledger thead th,table.ledger tfoot th{font:400 .75rem/1.4 var(--mono);color:var(--muted)}
 table.ledger tfoot td,table.ledger tfoot th{border-bottom:0;border-top:1px solid var(--fg)}
 table.ledger tbody th{font-weight:inherit}
+.radial.stack .node{display:flex;align-items:center;justify-content:flex-end;height:auto;min-height:52px;line-height:1.25;white-space:normal;max-width:calc(100vw - 2rem);padding-top:.5rem;padding-bottom:.5rem}

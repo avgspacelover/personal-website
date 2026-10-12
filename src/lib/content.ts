@@ -1,5 +1,5 @@
 // Seed content. Replace with DB queries once the CMS lands (see db/schema.sql).
-export type Accomplishment = { id: string; title: string; detail: string; year: string; figure: string; url?: string; vocation?: { slug: string; name: string } };
+export type Accomplishment = { id: string; title: string; detail: string; year: string; figure: string; url?: string; vocations: { slug: string; name: string }[] };
 export type Stat = { id: string; label: string; value: string; period: string; note: string; url?: string };
 export type Vocation = { slug: string; name: string; intro: string; updated?: Date };
 export type Entry = { id?: string; slug: string; kind: "projects" | "experience"; title: string; org?: string; summary: string; year: string; status: string; tech: string[]; vocations: string[]; location?: string; seoTitle?: string; seoDescription?: string; seoImage?: string; canonical?: string; body: unknown; updated?: Date };

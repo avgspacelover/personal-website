@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { asc, eq } from "drizzle-orm";
-import { getDb, accomplishment, stat, vocation } from "@/db";
+import { getDb, accomplishment, accomplishmentVocation, stat, vocation } from "@/db";
 import { requireAdmin } from "@/lib/auth";
 import { UUID } from "@/lib/slug";
 import { deleteMilestone, saveAccomplishment, saveStat } from "../../actions";
@@ -15,11 +15,12 @@ export default async function EditMilestone(props: { params: Promise<{ kind: str
   if (!isNew && !row) notFound();
   const a = acc ? (row as typeof accomplishment.$inferSelect | null) : null, s = !acc ? (row as typeof stat.$inferSelect | null) : null;
   const vocs = acc ? await db.select({ id: vocation.id, name: vocation.name }).from(vocation).orderBy(asc(vocation.position)) : [];
+  const linked = new Set(acc && a ? (await db.select({ v: accomplishmentVocation.vocationId }).from(accomplishmentVocation).where(eq(accomplishmentVocation.accomplishmentId, a.id))).map((r) => r.v) : []);
   const status = (row as { status?: string } | null)?.status ?? "draft", position = (row as { position?: number } | null)?.position ?? 0;
   const F = (i: string, label: string, el: React.ReactNode) => <><label className="mono" htmlFor={i}>{label}</label>{el}</>;
   return (<>
-    <p className="mono" style={{ marginTop: "2rem" }}><Link href="/admin/milestones">MILESTONES</Link> / {acc ? "ACCOMPLISHMENT" : "FIGURE"} / {isNew ? "NEW" : "EDIT"}</p>
-    <h1 style={{ marginTop: ".5rem" }}>{isNew ? (acc ? "New accomplishment" : "New figure") : (a?.title ?? `${s?.label}: ${s?.value}`)}</h1>
+    <p className="mono" style={{ marginTop: "2rem" }}><Link href="/admin/milestones">MILESTONES</Link> / {acc ? "ACCOMPLISHMENT" : "NUMBER"} / {isNew ? "NEW" : "EDIT"}</p>
+    <h1 style={{ marginTop: ".5rem" }}>{isNew ? (acc ? "New accomplishment" : "New number") : (a?.title ?? `${s?.label}: ${s?.value}`)}</h1>
     <form action={acc ? saveAccomplishment : saveStat} className="login edit">
       <input type="hidden" name="id" value={row ? (row as { id: string }).id : ""} />
       {sp.error && <p role="alert" className="err">{msg[sp.error] ?? "Could not save."}</p>}
@@ -28,7 +29,10 @@ export default async function EditMilestone(props: { params: Promise<{ kind: str
         {F("figure", "HEADLINE FIGURE (OPTIONAL, E.G. 40%, 1ST PLACE, 12K USERS)", <input id="figure" name="figure" maxLength={40} defaultValue={a?.figure} />)}
         {F("detail", "DETAIL", <textarea id="detail" name="detail" rows={3} maxLength={600} defaultValue={a?.detail} />)}
         {F("year", "YEAR", <input id="year" name="year" maxLength={20} placeholder="2026" defaultValue={a?.year} />)}
-        {F("vocationId", "VOCATION (ALSO SHOWN ON THAT VOCATION'S PAGE)", <select id="vocationId" name="vocationId" defaultValue={a?.vocationId ?? ""}><option value="">None</option>{vocs.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select>)}
+        <fieldset style={{ border: "1px solid var(--control)", borderRadius: 2, padding: ".75rem" }}><legend className="mono">VOCATIONS (ANY NUMBER; ALSO SHOWN ON EACH VOCATION'S PAGE)</legend>
+          {vocs.map((v) => <label key={v.id} style={{ display: "flex", gap: ".6rem", alignItems: "center", minHeight: 44 }}><input type="checkbox" name="vocations" value={v.id} defaultChecked={linked.has(v.id)} style={{ minHeight: 0 }} /> {v.name}</label>)}
+          {!vocs.length && <p className="mono" style={{ margin: 0 }}>NO VOCATIONS YET</p>}
+        </fieldset>
         {F("url", "LINK (OPTIONAL)", <input id="url" name="url" type="url" maxLength={500} defaultValue={a?.url ?? ""} />)}
       </> : <>
         {F("label", "LABEL (E.G. TALKS GIVEN)", <input id="label" name="label" maxLength={80} defaultValue={s?.label} required />)}

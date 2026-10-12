@@ -99,6 +99,13 @@
       "when": 1791753761356,
       "tag": "0013_purple_tusk",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791781785406,
+      "tag": "0014_unknown_manta",
+      "breakpoints": true
     }
   ]
 }

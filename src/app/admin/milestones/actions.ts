@@ -1,7 +1,7 @@
 "use server";
 import { redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
-import { getDb, accomplishment, stat, vocation } from "@/db";
+import { and, eq, inArray } from "drizzle-orm";
+import { getDb, accomplishment, accomplishmentVocation, stat, vocation } from "@/db";
 import { requireAdmin } from "@/lib/auth";
 import { UUID } from "@/lib/slug";
 const STATUS = ["draft", "published", "archived"] as const;
@@ -17,10 +17,16 @@ export async function saveAccomplishment(fd: FormData) {
   const title = str(fd, "title", 200), url = str(fd, "url", 501);
   if (!title) back("title");
   if (!okUrl(url)) back("url");
-  const db = await getDb(), vid = str(fd, "vocationId", 40);
-  const vocationId = UUID.test(vid) && (await db.select({ id: vocation.id }).from(vocation).where(eq(vocation.id, vid)).limit(1)).length ? vid : null;
-  const v = { title, detail: str(fd, "detail", 600), year: str(fd, "year", 20), figure: str(fd, "figure", 40), url: url || null, vocationId, position: num(fd), status: pickStatus(fd) };
-  if (id) await db.update(accomplishment).set(v).where(eq(accomplishment.id, id)); else await db.insert(accomplishment).values(v);
+  const db = await getDb();
+  const wanted = fd.getAll("vocations").map(String).filter((x) => UUID.test(x));
+  const valid = wanted.length ? (await db.select({ id: vocation.id }).from(vocation).where(inArray(vocation.id, wanted))).map((r) => r.id) : [];
+  const v = { title, detail: str(fd, "detail", 600), year: str(fd, "year", 20), figure: str(fd, "figure", 40), url: url || null, position: num(fd), status: pickStatus(fd) };
+  await db.transaction(async (tx) => {
+    const aid = id || (await tx.insert(accomplishment).values(v).returning({ id: accomplishment.id }))[0].id;
+    if (id) await tx.update(accomplishment).set(v).where(eq(accomplishment.id, id));
+    await tx.delete(accomplishmentVocation).where(eq(accomplishmentVocation.accomplishmentId, aid));
+    if (valid.length) await tx.insert(accomplishmentVocation).values(valid.map((vid, i) => ({ accomplishmentId: aid, vocationId: vid, position: i })));
+  });
   redirect("/admin/milestones");
 }
 export async function saveStat(fd: FormData) {

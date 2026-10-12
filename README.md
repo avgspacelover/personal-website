@@ -10,10 +10,10 @@ Next.js 14 (App Router) + TypeScript. Static-rendered public site: vocations, Ex
 Deploying to a VPS: see `DEPLOY.md`. The app has been exercised against both the embedded PGlite and a real PostgreSQL server (all migrations, public pages, admin CRUD, JSONB bodies, redirects, PDF, agent, uploads, export).
 
 ## Milestones tab (accomplishments and statistics)
-Public page `/milestones` (default name **Milestones**; rename it in Site settings, the URL stays), edited at `/admin/milestones`:
-- **Accomplishments:** title, optional headline figure (e.g. "1st place", "400 stars"), detail, year, optional http(s) link and an optional vocation. Ones tied to a vocation also appear on that vocation's page. Found by search.
+Public page `/milestones` (default name **Accomplishments & Rudimentary Numbers**; rename it in Site settings, the URL stays), edited at `/admin/milestones`:
+- **Accomplishments:** title, optional headline figure (e.g. "1st place", "400 stars"), detail, year, optional http(s) link and any number of vocations (many-to-many, like projects). Ones tied to a vocation also appear on that vocation's page. Found by search.
 - **Reading and watching by year:** automatic. Library items (essays, books, movies, and the new **Series** collection for TV) have a "year read / watched" field; the page counts published items per year and in total, with a "this year so far" line. Items without that year are not counted.
-- **Figures:** free-form numbers (label, value, period, note, optional link): commits, talks given, anything.
+- **Numbers:** free-form numbers (label, value, period, note, optional link): commits, talks given, anything.
 All three honour draft/published status, and the data is in the JSON export.
 
 ## Draft preview, revision history, SEO fields (projects and experience)

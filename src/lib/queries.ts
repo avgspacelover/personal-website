@@ -85,7 +85,7 @@ export async function searchPublic(q: string): Promise<Hit[]> {
     const s = score([[e.title, 5], [e.org ?? "", 3], [e.tech.join(" "), 3], [e.summary, 2], [e.vocations.map((v) => names.get(v) ?? "").join(" "), 2], [docText(toDoc(e.body)), 1]], terms);
     if (s) hits.push({ type: e.kind === "projects" ? "PROJECT" : "EXPERIENCE", title: e.title, href: `/${e.vocations[0]}/${e.kind}/${e.slug}`, note: e.summary, score: s });
   }
-  for (const a of await getAccomplishments()) { const s = score([[a.title, 5], [a.vocation?.name ?? "", 3], [a.figure, 3], [a.detail, 2], [a.year, 1]], terms); if (s) hits.push({ type: "ACCOMPLISHMENT", title: a.title, href: "/milestones", note: a.detail, score: s }); }
+  for (const a of await getAccomplishments()) { const s = score([[a.title, 5], [a.vocations.map((v) => v.name).join(" "), 3], [a.figure, 3], [a.detail, 2], [a.year, 1]], terms); if (s) hits.push({ type: "ACCOMPLISHMENT", title: a.title, href: "/milestones", note: a.detail, score: s }); }
   collections.forEach((c, n) => libs[n].forEach((i) => {
     const s = score([[i.title, 5], [i.by, 3], [(i.tags ?? []).join(" "), 3], [i.note, 2], [i.year ?? "", 1]], terms);
     if (s) hits.push({ type: c.name.toUpperCase(), title: i.title, href: `/${c.slug}`, note: i.note, score: s });
@@ -95,7 +95,7 @@ export async function searchPublic(q: string): Promise<Hit[]> {
 
 export type Settings = { milestonesTitle: string; milestonesIntro: string; siteName: string; tagline: string; intro: string; currently: unknown; aboutBody: unknown; contactEmail: string; links: { label: string; url: string }[]; metaDescription: string };
 export const SETTINGS_DEFAULTS: Settings = {
-  milestonesTitle: "Milestones", milestonesIntro: "Accomplishments and figures, kept up to date by hand.",
+  milestonesTitle: "Accomplishments & Rudimentary Numbers", milestonesIntro: "Things I have done, and a few counted things, kept up to date by hand.",
   siteName: "Personal Archive", tagline: "Software, systems, and ideas, filed by discipline.",
   intro: "Professional work is organized by vocation. Essays, books, films, and communities live separately in the library.",
   currently: [], aboutBody: [], contactEmail: "", links: [], metaDescription: "Professional work by vocation, and a separate personal library.",
@@ -108,14 +108,15 @@ export async function getSettings(): Promise<Settings> {
   return { milestonesTitle: r.milestonesTitle || SETTINGS_DEFAULTS.milestonesTitle, milestonesIntro: r.milestonesIntro || SETTINGS_DEFAULTS.milestonesIntro, siteName: r.siteName || SETTINGS_DEFAULTS.siteName, tagline: r.tagline || SETTINGS_DEFAULTS.tagline, intro: r.intro || SETTINGS_DEFAULTS.intro, currently: r.currently, aboutBody: r.aboutBody, contactEmail: r.contactEmail, links, metaDescription: r.metaDescription || SETTINGS_DEFAULTS.metaDescription };
 }
 
-import { accomplishment, stat } from "../db";
+import { accomplishment, accomplishmentVocation, stat } from "../db";
 const httpUrl = (u: string | null) => (u && /^https?:\/\//i.test(u) ? u : undefined);
 export async function getAccomplishments(opts: { vocation?: string } = {}): Promise<Accomplishment[]> {
   const db = await getDb();
-  const rows = await db.select({ a: accomplishment, vs: vocation.slug, vn: vocation.name, vstat: vocation.status }).from(accomplishment)
-    .leftJoin(vocation, eq(vocation.id, accomplishment.vocationId)).where(eq(accomplishment.status, "published")).orderBy(asc(accomplishment.position), desc(accomplishment.year));
-  const out = rows.map(({ a, vs, vn, vstat }): Accomplishment => ({ id: a.id, title: a.title, detail: a.detail, year: a.year, figure: a.figure, url: httpUrl(a.url), vocation: vs && vstat === "published" ? { slug: vs, name: vn! } : undefined }));
-  return opts.vocation ? out.filter((x) => x.vocation?.slug === opts.vocation) : out;
+  const rows = await db.select().from(accomplishment).where(eq(accomplishment.status, "published")).orderBy(asc(accomplishment.position), desc(accomplishment.year));
+  const links = await db.select({ aid: accomplishmentVocation.accomplishmentId, slug: vocation.slug, name: vocation.name }).from(accomplishmentVocation)
+    .innerJoin(vocation, eq(vocation.id, accomplishmentVocation.vocationId)).where(eq(vocation.status, "published")).orderBy(asc(accomplishmentVocation.position), asc(vocation.position));
+  const out = rows.map((a): Accomplishment => ({ id: a.id, title: a.title, detail: a.detail, year: a.year, figure: a.figure, url: httpUrl(a.url), vocations: links.filter((l) => l.aid === a.id).map((l) => ({ slug: l.slug, name: l.name })) }));
+  return opts.vocation ? out.filter((x) => x.vocations.some((v) => v.slug === opts.vocation)) : out;
 }
 export async function getStats(): Promise<Stat[]> {
   const rows = await (await getDb()).select().from(stat).where(eq(stat.status, "published")).orderBy(asc(stat.position), asc(stat.label));

@@ -106,9 +106,15 @@ export const revision = pgTable("revision", {
 // Milestones page: accomplishments (optionally tied to one vocation) and free-form figures. Reading/watching counts are derived from library_item.finished.
 export const accomplishment = pgTable("accomplishment", {
   id: id(), updatedAt: updatedAt(), title: text("title").notNull(), detail: text("detail").notNull().default(""), year: text("year").notNull().default(""),
-  figure: text("figure").notNull().default(""), url: text("url"), vocationId: uuid("vocation_id").references(() => vocation.id, { onDelete: "set null" }),
+  figure: text("figure").notNull().default(""), url: text("url"),
   position: integer("position").notNull().default(0), status: status("status").notNull().default("draft"),
 });
+// An accomplishment can belong to any number of vocations (like projects); deleting a vocation only removes the link.
+export const accomplishmentVocation = pgTable("accomplishment_vocation", {
+  accomplishmentId: uuid("accomplishment_id").notNull().references(() => accomplishment.id, { onDelete: "cascade" }),
+  vocationId: uuid("vocation_id").notNull().references(() => vocation.id, { onDelete: "cascade" }),
+  position: integer("position").notNull().default(0),
+}, (t) => ({ pk: primaryKey({ columns: [t.accomplishmentId, t.vocationId] }) }));
 export const stat = pgTable("stat", {
   id: id(), updatedAt: updatedAt(), label: text("label").notNull(), value: text("value").notNull(), period: text("period").notNull().default(""), note: text("note").notNull().default(""),
   url: text("url"), position: integer("position").notNull().default(0), status: status("status").notNull().default("draft"),
