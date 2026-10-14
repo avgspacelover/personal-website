@@ -4,6 +4,8 @@ A self-hosted personal website, content management system (CMS), knowledge libra
 
 Companion documents in the repository: `README-1.md` (implementation notes and design decisions), `DEPLOY.md` (VPS deployment guide), `src/lib/storage/README.md` (moving media to S3 or Cloudflare R2).
 
+Getting started with your own copy: [self-hosting guide](docs/GETTING-STARTED.md) | [Google OAuth registration guide (PDF)](output/pdf/google-oauth-registration.pdf).
+
 The original project software is licensed under the [MIT License](LICENSE). Personal/archive content, uploaded media, sample records, branding, and third-party components or assets are excluded; see [LICENSE-NOTICE.md](LICENSE-NOTICE.md).
 
 ---
