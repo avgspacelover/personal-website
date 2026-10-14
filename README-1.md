@@ -1,98 +1,59 @@
-# Personal Archive
+# Personal Archive: Implementation Notes
 
-Next.js 14 (App Router) + TypeScript. Static-rendered public site: vocations, Experience/Projects, separate library, System/Light/Dark theme, and a mobile radial navigation with a semantic nav kept in the DOM.
+This document supplements [README.md](README.md), the canonical project overview. It records implementation details and design decisions that are useful when maintaining or extending the application. For VPS setup, use [DEPLOY.md](DEPLOY.md); for object storage, use [src/lib/storage/README.md](src/lib/storage/README.md).
 
-## Run
-    npm install && npm run setup && npm run dev
+## Current shape
 
-`setup` migrates and seeds placeholder content (first run only: `db:seed` refuses to run on a database that already has content unless you pass `--force`, because seeding deletes content). With no `DATABASE_URL`, an embedded Postgres (PGlite) is used under `.data/`. Set `DATABASE_URL` for real Postgres (same migrations in `drizzle/`). After editing `src/db/schema.ts` run `npm run db:generate`.
+The application is a dynamic Next.js App Router monolith using React, TypeScript, Drizzle ORM and PostgreSQL. When `DATABASE_URL` is unset, local development uses PGlite in `.data/pg`. Public pages, the CMS, APIs, media delivery, resume generation and the optional resume agent run in the same Node.js application.
 
-Deploying to a VPS: see `DEPLOY.md`. The app has been exercised against both the embedded PGlite and a real PostgreSQL server (all migrations, public pages, admin CRUD, JSONB bodies, redirects, PDF, agent, uploads, export).
+The database is the source of truth for live content. `src/lib/content.ts` contains placeholder seed data, not the runtime content store. `npm run setup` migrates and seeds a fresh local database; seeding an already-populated database is destructive and requires `--force`.
 
-## Milestones tab (accomplishments and statistics)
-Public page `/milestones` (default name **Accomplishments & Rudimentary Numbers**; rename it in Site settings, the URL stays), edited at `/admin/milestones`:
-- **Accomplishments:** title, optional headline figure (e.g. "1st place", "400 stars"), detail, year, optional http(s) link and any number of vocations (many-to-many, like projects). Ones tied to a vocation also appear on that vocation's page. Found by search.
-- **Reading and watching by year:** automatic. Library items (essays, books, movies, and the new **Series** collection for TV) have a "year read / watched" field; the page counts published items per year and in total, with a "this year so far" line. Items without that year are not counted.
-- **Numbers:** free-form numbers (label, value, period, note, optional link): commits, talks given, anything.
-All three honour draft/published status, and the data is in the JSON export.
+## Data and publishing model
 
-## Draft preview, revision history, SEO fields (projects and experience)
-- **Preview:** "Preview in the public layout" on a record's editor opens `/preview/<id>` (admin only, noindex, blocked in robots.txt). It uses the same `EntryView` component as the public page, for any status, and shows the last *saved* version (not unsaved edits in the editor).
-- **History:** every save that actually changes something first stores the previous version (who, when). Re-saving unchanged content stores nothing. The newest 30 are kept per record. **Restore content** brings back title, summary, body, tags, period/phase/location and SEO fields, but deliberately not slug, publish status or vocations (those have side effects: URLs, redirects, visibility). The current content is saved before a restore, so a restore can be undone. Deleting a record deletes its history. Not covered by history: vocations, library items, settings.
-- **SEO (optional, blank = automatic):** search/share title (70), description (160, default the summary), social image (a media-library image, default the first body image) and a canonical URL override (http/https only). An override points search engines at the other copy and removes the page from the sitemap.
+- A `vocation` is a public professional area. Projects and experience share the `entry` table and are distinguished by `kind`.
+- `vocation_entry` links entries to multiple vocations. Exactly one selected vocation supplies the canonical path, `/<vocation>/<kind>/<slug>`.
+- Library collections share `library_item`, with collection-specific fields described in `src/lib/library.ts`. Library records do not need a professional-vocation link.
+- Accomplishments can link to multiple vocations. Reading and watching totals are derived from published library items' `finished` year; free-form figures use `stat`.
+- Content statuses are `draft`, `published` and `archived`. Public queries filter to published records. Resume records also require a published resume version before appearing publicly.
+- Resume versions reference entries, skills and education instead of copying their source content. Optional bullets belong to that resume version.
 
-## Site settings and caching
-`/admin/settings` edits the site name, homepage headline/intro, the "Currently" block, the About page (both rich text), a default description, an optional public contact email and "Elsewhere" links. Nothing is shown unless entered; blank fields use defaults; links must be http(s)/mailto. The row is included in the JSON export.
-Caching: public pages render per request (measured 18-34 ms TTFB with real Postgres, ~4 KB gzipped HTML), because the nonce-based CSP needs fresh HTML per request; static/ISR caching would mean weakening the CSP for no noticeable gain. Immutable caching is used for media and static assets, and the public resume PDF is cached in memory for 60 s. Client JS on the home page is ~175 KB gzipped (React 19 + Next runtime).
+## Editing and history
 
-## Security (spec section 9)
-- **Auth:** Google sign-in only (Auth.js), email allowlist re-checked on every request, 24 h encrypted HttpOnly session cookie (Secure over HTTPS). `SESSIONS_VALID_AFTER` revokes all sessions. Every admin page/action/route authorizes server-side.
-- **Rate limiting + CSP:** `src/proxy.ts` (limits listed in `DEPLOY.md`; nonce-based CSP, `CSP_REPORT_ONLY=1` to soften). Static headers in `next.config.mjs`.
-- **Data access:** optional two-role Postgres setup (`MIGRATE_DATABASE_URL` for migrations, `DATABASE_URL` data-only for the app).
-- **Input:** every text field is length-capped, rich text is whitelisted, URLs scheme-checked, bodies limited to 500 KB, uploads decoded and size-limited.
-- **Audit log** (`/admin/audit`) of sign-ins and admin actions. Redirects never reveal where a now-private record moved.
-- **Dependencies:** Next 16, React 19, current Auth.js/Drizzle/Tiptap; `npm audit --omit=dev` reports 0 vulnerabilities (dev-only tooling has a few moderate advisories, not shipped).
-- **Browser-verified** (headless Chromium): no console errors or CSP violations on public pages, login or admin at 375/768/1024/1440 px; no horizontal overflow; hydration, theme cycle/persistence, OS dark mode, keyboard focus rings, mobile menu geometry, and the Tiptap 3 editor (typing, toolbar state, save, public render, reopen). **Not verifiable without internet:** the actual redirect to Google and the OAuth callback; check sign-in once on your real domain.
+Admin pages, server actions and protected route handlers authorize on the server. `src/lib/auth.ts` centralizes checks. Google sign-in is restricted to verified emails in `ADMIN_EMAILS`; the encrypted JWT session lifetime is 24 hours, as configured in `src/auth.ts`. `SESSIONS_VALID_AFTER` can revoke sessions issued before a chosen timestamp, and removing an email from the allowlist immediately denies subsequent requests.
 
-## Admin (Google sign-in only)
-1. Google Cloud Console > OAuth client (Web). Authorized redirect URI: `<SITE_URL>/api/auth/callback/google`.
-2. `cp .env.example .env`, then set `AUTH_SECRET` (`openssl rand -base64 32`), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `ADMIN_EMAILS`.
-3. Sign in at `/admin`.
+Projects and experience use a Tiptap editor whose saved JSON is sanitized both on write and render. Supported content is deliberately limited to common text nodes, marks, links and media-library images. Entry saves retain the previous snapshot when content changes; restore brings back content fields while leaving slug, visibility and vocation links unchanged. The newest 30 snapshots per entry are retained.
 
-Auth.js handles OAuth; the session is an encrypted HttpOnly JWT cookie (3 days). Only verified Google accounts listed in `ADMIN_EMAILS` get in, and the allowlist is re-checked on every request, so removing an email revokes access at once. Sign-out clears the cookie but a copied JWT stays valid until expiry unless the email is removed from the allowlist or `AUTH_SECRET` is rotated. No password endpoint exists, so there is nothing to rate-limit locally. Every admin page and server action must call `requireAdmin()` itself; layouts are not a security boundary. Server actions get Next's built-in Origin check.
+Renaming a published vocation or changing a published entry's canonical path creates permanent redirects. Redirect resolution checks that the destination remains public, so an old URL does not reveal the new path of unpublished content. Draft and archived entries do not create public redirects.
 
-## Search, export, SEO
-- Search: every term must match; fields are weighted (title > organization/creator/tags/tech > summary/notes > body text). It runs in memory over published records, which is fine at personal scale; switch to Postgres full-text if the archive grows large. Library tags link to a search for that tag.
-- Export: `/api/admin/export` (admin download) or `npm run export -- backups/archive.json` (cron-friendly). Contains vocations, records with their vocation links, library, media metadata, skills, education and redirects, with rich text as JSON. **Media files are not inside the JSON: back up `MEDIA_DIR` (or the bucket) alongside it, plus a `pg_dump` for full-fidelity database backups.** There is no import yet.
-- SEO: canonical URLs, Open Graph (first body image used as the share image), JSON-LD on record pages, sitemap with `lastmod`, RSS with `pubDate`, robots (blocks `/admin`, `/api`, `/search`). The footer date is the latest published update.
+Preview, revision history and per-entry SEO overrides currently cover projects and experience only. Other content types do not have revision snapshots.
 
-## Responsive and accessibility notes
-Verified in a real (headless) browser at 375, 768, 1024 and 1440 px: zero horizontal overflow, zero console/CSP errors. Mobile menu: tap targets >= 52 px, no overlaps, nothing off-screen, tap-outside/Escape closes it.
-- Mobile radial menu (`src/lib/radial.ts`): a quarter-circle fan for up to 4 destinations at the smallest radius where nothing overlaps or leaves the screen (checked for 360/375/414 px wide viewports); with more items (e.g. 5+ vocations) it becomes a scrollable vertical stack. The core button doubles as Back/Close. The full semantic nav stays in the DOM (visually hidden on mobile).
-- Desktop nav is grouped (WORK / LIBRARY / SITE) so it scales with more vocations.
-- Contrast: all text pairs pass WCAG AA in both themes (lowest: muted text on surface, 4.93:1). Decorative rules stay light; form controls and buttons use a separate `--control` border token (>= 3:1).
-- Not verified in a real browser here (no browser available in my sandbox): please spot-check 375/768/1024/1440 px, keyboard focus order and the editor.
+## Resume builder and agent
 
-## Resumes
-A resume version (`resume` + `resume_item`) only references canonical records: pick published Experience/Projects plus Skills and Education (`/admin/profile`), order them, choose section order and length, and optionally write version-specific bullets (blank = the record's own summary). `buildResume()` (`src/lib/resume.ts`) is the single model behind the builder outline, the public page and the PDF. Draft/archived records and unapproved agent-proposed items are excluded. Deleting a record removes it from every resume.
+`src/lib/resume.ts` builds the shared resume model used by the admin outline, public resume and PDF renderers. The two PDF renderers are `src/lib/resume-pdf.ts` (single column) and `src/lib/resume-pdf-deedy.ts` (two column). Both produce selectable text and can render one- or multi-page output.
 
-- **PDF** (`src/lib/resume-pdf.ts`, PDFKit): modelled on the popular "Jake's Resume" LaTeX layout: US Letter, 0.5in margins, centred small-caps name, one-line contact row (email/URLs are underlined, clickable links), small-caps section headings over a thin rule, bold title + right-aligned dates, italic organisation + location, compact bullets, unbulleted "Category: items" skill lines, in Computer Modern (CMU Serif, from the `computer-modern` package; falls back to Times). Text is real and selectable (ATS-friendly). "One page" shrinks type/spacing in steps down to 80%; if it still spills, the builder shows a warning. Section order defaults to Education, Experience, Projects, Technical Skills. Separate contact items with `|`.
-- **Public resume**: tick "Show this version on /resume" on a *Published* version (only one can be public). `/resume` renders it and `/resume/pdf` serves the PDF; otherwise `/resume` falls back to a plain overview. Admin PDF of any version: `/api/admin/resumes/<id>/pdf`.
-- **Two PDF formats from the same resume version**, always both downloadable: **Single column** (`classic`, the Jake-style layout above) and **Two column** (`deedy`, `src/lib/resume-pdf-deedy.ts`): US Letter, 0.4in margins, large light centred name over a grey contact line and an edge-to-edge rule, a 33% sidebar (Education, Technical Skills) beside a 66% main column (Experience, Projects), light grey uppercase section headings, bold uppercase entry titles with an italic role/tech, grey "dates | place" lines and compact bullets, in Lato and Raleway (the original's fonts; fonts are OFL-licensed npm packages). Columns flow independently and continue on page 2 if needed; "one page" shrinks type in steps like the classic format. Both layouts are modelled on the well-known templates (layout only, no template code copied).
-- A version's `template` is just its **default** format (used by `/resume/pdf` with no parameter and by the agent preview). Pick a format explicitly with `?template=classic|deedy` on `/resume/pdf` (public) or `/api/admin/resumes/<id>/pdf` (admin); unknown values fall back to the version's default. The public `/resume` page shows both download buttons; the builder shows page count and fit for each format.
+The resume agent is optional. Without `ANTHROPIC_API_KEY`, it uses local term overlap to rank records and proposes verbatim source sentences. With a key, it sends the target text and relevant record text to Anthropic. Its tools read published records and modify an in-memory proposal; bullet grounding is validated on the server. A human reviews the proposal and applies it through the admin UI. Applying creates or extends a resume, so check the destination resume's status before applying if you need the change to remain private.
 
-## Resume agent (`/admin/agent`)
-Modes: tailor to a job description, create for a role, rank projects, gap analysis, improve bullets. Code: `src/lib/agent/`.
-- **Controlled tools only** (`tools.ts`): `search_projects`, `search_experience`, `get_project`, `get_experience`, `create_resume`, `add_to_resume`, `remove_from_resume`, `rewrite_bullet`, `note_gap`, `generate_pdf`. They read PUBLISHED records and edit only an in-memory proposal. There is no database access, no publishing and no edit of canonical content.
-- **Server-side grounding** (`ground.ts`): a bullet is kept only if it quotes evidence that appears verbatim in the source record, every number in it appears in the record, and every capitalised/technical term in it appears in the record. Rejected bullets are listed with the reason. Relevance scores and matched terms are computed by the server, not reported by the model.
-- **Human approval**: a run only stores a *proposal* (`agent_run`, with a full tool-call audit log). You review each record, its source link and evidence, edit bullets, then **Apply as draft**: it creates a new draft resume or appends to an existing one. It never publishes, never edits records, and never changes items already on a resume. Applied/discarded runs cannot be applied again.
-- **Providers** (isolated, replaceable): with no key, an **offline** provider ranks records by weighted term overlap and proposes verbatim sentences (no model, no cost, no data leaves the server). Set `ANTHROPIC_API_KEY` (and optionally `AGENT_MODEL`) for model-written bullets via `anthropic.ts`; record text and the target are then sent to that provider. If the model call fails, the run falls back to offline. Model text and record text are treated as untrusted data in the system prompt, and validation does not depend on the model obeying it.
-- The Anthropic provider is tested with a scripted mock of the API (tool loop, rejected invented bullets, unknown tools, outage fallback), **not** against the live API: please try one real run with your key.
+The provider integration has been exercised with a scripted mock, not a live Anthropic API request. The live provider path still needs a real-key check if you intend to use it.
 
-## Media storage
-Migration guide to S3/Cloudflare R2: `src/lib/storage/README.md`.
+## Security and operations
 
-Uploads go through `POST /api/admin/media` (admin-only, Origin-checked; send `Accept: application/json` for JSON). Images are decoded to validate (JPEG/PNG/WebP, 5 MB, 50 MP), auto-oriented, stripped of metadata, and stored with WebP variants at 480/800/1200/1600 px (only widths smaller than the original). They are served from `/media/<key>` with a one-year immutable cache.
+- `src/proxy.ts` applies in-memory per-process rate limits and a per-request nonce Content Security Policy. Run behind the configured reverse proxy and expose the app only through that proxy; it supplies the trusted `X-Forwarded-For` value.
+- Protected upload, export and resume-PDF routes perform their own authorization checks. The upload route also checks the request origin; Next.js enforces origin checks for server actions.
+- Image uploads are decoded and validated, limited to 5 MB and 50 megapixels, auto-oriented, stripped of metadata and stored with WebP variants. Media keys are random UUID-based names, and the local storage driver rejects invalid keys.
+- For a single VPS, local disk storage is appropriate when `MEDIA_DIR` is persistent and backed up. The storage interface is in `src/lib/storage/index.ts`.
+- A full backup consists of PostgreSQL data, media files and the production environment configuration. The JSON export is useful for portability but omits media files, resume versions, agent runs and audit history; it is not a full-fidelity restore format.
+- Rate limits and the public PDF cache are held in process memory. Keep one app process unless limits and caching are moved to shared infrastructure.
 
-Storage sits behind the `MediaStorage` interface (`src/lib/storage/index.ts`: `put`, `get`, `delete`). The database stores keys only, and `mediaUrl(key)` is the single place that builds public URLs. Default driver: local disk at `MEDIA_DIR` (`.data/media`). **On the VPS, point `MEDIA_DIR` at a persistent path and back it up with the database.** To move to S3-compatible storage later: implement `MediaStorage` in `src/lib/storage/s3.ts`, add it to `getStorage()`, set `STORAGE_DRIVER=s3` and `MEDIA_PUBLIC_BASE`, and copy existing files to the bucket under the same keys. No CMS or schema changes needed.
+## Verified and remaining work
 
-## Status vs. spec
-Built: public site, IA, routes, theme without flash, radial nav, visual system, Postgres schema (`db/schema.sql`).
-Also built (increment 2): /about, /resume (derived view), sitemap, robots, RSS at /feed.xml, 404. Set SITE_URL in production.
-Also built: Google-only admin auth, `/admin` dashboard, vocation CRUD (`/admin/vocations`), project/experience CRUD (`/admin/entries`), media library (`/admin/media`), Tiptap rich-text editor for record bodies, permanent redirects for renamed slugs/vocations, library editors for Essays/Books/Movies/Community (`/admin/library`), public search (`/search`) and admin search (`/admin/search`, includes drafts), JSON export, SEO metadata, resume builder with PDF export and a public resume (`/admin/resumes`), skills/education editor (`/admin/profile`), resume agent (`/admin/agent`).
-Not built: CMS editing, WYSIWYG, media uploads, resume builder/PDF, AI agent, search, export. Content now lives in the database; `src/lib/content.ts` is only the seed source (`npm run db:seed -- --force` resets the DB to it).
+The project overview in [README.md](README.md) is the source for the current verification record, known limitations and launch checklist. Its reported checks include production builds, migrations against PostgreSQL, authorization and validation paths, content workflows, PDF extraction, agent grounding with a mock, and browser checks at several viewport sizes.
 
-## Decisions
-- Library items share one table (`library_item`) with per-collection field labels (`src/lib/library.ts`). Library links must be http(s)/mailto (checked on save and again on read). Book covers and movie posters are picked from the media library; deleting an image used as a cover or in a body is blocked.
-- Redirects: renaming a published record's slug, changing its primary vocation, or renaming a published vocation stores old -> new paths (`redirect_rule`) and answers 308. Chains are collapsed, a path that becomes live again stops redirecting, and a non-primary vocation URL redirects to the canonical one. Drafts create no redirects. Deleting a record or vocation removes the redirects that pointed at it, so those old URLs return a plain 404.
-- Experience and Project share one `entry` table (kind column) instead of two. Same fields and CRUD; one canonical record each. `db/spec-schema.sql` is the original full-spec reference.
-- Pages are `force-dynamic` for now. Static/ISR with `revalidatePath` on CMS save comes with the CMS.
-- `entry.body` is whitelisted Tiptap/ProseMirror JSON (`src/lib/richtext.ts`), sanitized on save and again on render; the public page renders it with a React renderer (no raw HTML). Old string-array bodies are converted on read. Images reference media by key; alt text and responsive `srcset` come from the media library at render time. Deleting an image used in a body is blocked.
-- Canonical URL per record: `/<primary-vocation>/<kind>/<slug>`; other vocation pages link to it (no duplicate pages).
-- Palette: pale grey + ink + blue accent (readability held up best in both themes).
-- Fonts: Hanken Grotesk (UI) + IBM Plex Mono (metadata only), 3 weights total, self-hosted via @fontsource (no Google requests).
-- Radial nav: two levels (Work / Library) so it stays uncluttered as vocations grow.
-- Vocation slugs share the `/[section]` namespace with library collections; the CMS must reject colliding slugs.
+Still dependent on the owner's credentials or server: real Google OAuth on the production domain, a live model-provider run if desired, a VPS rehearsal, and a tested backup restore. The repository does not currently include a repeatable automated test suite or linter. A real accessibility audit and the owner's own visual review also remain useful before launch.
 
-## Next
-1. Real-key agent run and real Google sign-in on your domain. 2. VPS dry run (`DEPLOY.md`). 3. Optional: previews/history for vocations, library and settings; more resume templates; command palette.
+## Extending the project
+
+When adding a content type, update the schema and migration, public and admin queries, server-side validation, editor and listing pages, search, export, sitemap or feeds where relevant, and delete/reference behavior. Keep public reads explicitly scoped to published records and authorize each mutation independently of its layout.
+
+When adding a schema change, edit `src/db/schema.ts`, generate a migration with `npm run db:generate`, inspect the generated SQL, then apply it with `npm run db:migrate`. Production migration credentials should be separate from the app's data-access role.
+
+The original normalized concept schema is retained as a reference in `db/spec-schema.sql`; it is not the live schema. The live schema is `src/db/schema.ts`, and the ordered SQL migrations in `drizzle/` define deployed database changes.

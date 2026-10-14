@@ -2,7 +2,7 @@
 
 A self-hosted personal website, content management system (CMS), knowledge library and resume generator in one Next.js application. This document explains what exists today, how it is built, what to settle before hosting it, and what is still open.
 
-Companion documents in the repository: `README-1.md` (feature notes and decisions), `DEPLOY.md` (VPS deployment guide), `src/lib/storage/README.md` (moving media to S3 or Cloudflare R2).
+Companion documents in the repository: `README-1.md` (implementation notes and design decisions), `DEPLOY.md` (VPS deployment guide), `src/lib/storage/README.md` (moving media to S3 or Cloudflare R2).
 
 ---
 
@@ -308,7 +308,7 @@ Node 20.9 or newer is required.
 
 - **Authoritative backup:** `pg_dump` + the media directory + `.env`.
 - **JSON export** includes vocations, records with their vocation links, library, settings, accomplishments, numbers, media metadata, skills, education and redirects, with rich text as JSON.
-- **Moving media to S3, R2 or another S3-compatible store later** needs no schema or CMS change: implement the three-method `MediaStorage` interface, copy files under the same keys, and optionally set `MEDIA_PUBLIC_BASE`. Steps are in `src/lib/storage/README-1.md`.
+- **Moving media to S3, R2 or another S3-compatible store later** needs no schema or CMS change: implement the three-method `MediaStorage` interface, copy files under the same keys, and optionally set `MEDIA_PUBLIC_BASE`. Steps are in `src/lib/storage/README.md`.
 
 ### 6.5 First-deploy checklist
 
@@ -406,7 +406,7 @@ Node 20.9 or newer is required.
 
 ## 10. Where to read more
 
-- `README-1.md`: feature notes and the reasoning behind decisions.
+- `README-1.md`: current implementation notes and design decisions that supplement this overview.
 - `DEPLOY.md`: step-by-step VPS guide, security notes and backup script.
 - `src/lib/storage/README.md`: switching media storage to S3 or Cloudflare R2.
 - `src/db/schema.ts`: the full data model. `drizzle/`: the migration history.
