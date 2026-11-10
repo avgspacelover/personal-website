@@ -2,7 +2,14 @@ import Link from "next/link";
 import { entryHref } from "@/lib/content";
 import { getEntries, getSkills, getEducation, getVocations } from "@/lib/queries";
 import { buildResume, publicResumeId } from "@/lib/resume";
-export const metadata = { title: "Resume" };
+import type { Metadata } from "next";
+export const metadata: Metadata = {
+  title: "Resume",
+  description: "Professional experience, selected projects, skills, and education.",
+  alternates: { canonical: "/resume" },
+  openGraph: { type: "website", title: "Resume", description: "Professional experience, selected projects, skills, and education.", url: "/resume" },
+  twitter: { card: "summary", title: "Resume", description: "Professional experience, selected projects, skills, and education." },
+};
 // Derived view: every item is read from canonical records, nothing is re-entered here.
 export const dynamic = "force-dynamic";
 export default async function Resume() {

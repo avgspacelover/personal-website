@@ -61,6 +61,7 @@ Behaviours worth knowing:
 - Visiting a record through a non-primary vocation, or via an old slug, returns a **308 redirect** to the canonical URL. Renaming a slug, changing a primary vocation or renaming a vocation records the old path automatically. A redirect never reveals where a now-private record moved.
 - Drafts and archived content never appear in pages, search, feed, sitemap, resume or agent input.
 - Every page has a canonical URL, Open Graph tags (first body image or a chosen social image), JSON-LD on record pages, and an "updated" footer date derived from the latest published change.
+- Site-wide Open Graph/Twitter defaults and WebSite JSON-LD are generated from settings. About and Resume provide page-specific metadata; About emits ProfilePage/Person JSON-LD when a public resume supplies a name. See [GEO and AEO guidelines](docs/GEO-AEO.md) for crawler choices, structured data limits, and practical content guidance.
 
 ### 3.2 Navigation and responsive design
 
