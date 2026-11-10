@@ -62,6 +62,7 @@ Behaviours worth knowing:
 - Drafts and archived content never appear in pages, search, feed, sitemap, resume or agent input.
 - Every page has a canonical URL, Open Graph tags (first body image or a chosen social image), JSON-LD on record pages, and an "updated" footer date derived from the latest published change.
 - Site-wide Open Graph/Twitter defaults and WebSite JSON-LD are generated from settings. About and Resume provide page-specific metadata; About emits ProfilePage/Person JSON-LD when a public resume supplies a name. See [GEO and AEO guidelines](docs/GEO-AEO.md) for crawler choices, structured data limits, and practical content guidance.
+- Run `npm run seo:check` to check metadata builders, structured data, robots rules, and sitemap output against an isolated database fixture.
 
 ### 3.2 Navigation and responsive design
 

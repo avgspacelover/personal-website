@@ -8,6 +8,7 @@ Generative Engine Optimization (GEO) and Answer Engine Optimization (AEO) descri
 - `robots.txt` allows public routes and excludes admin, API, search, and preview routes. The wildcard rule currently allows public crawlers, including AI search crawlers, unless the hosting provider, firewall, or bot protection blocks them.
 - The site emits `WebSite` JSON-LD globally, `CreativeWork` JSON-LD for project and experience pages, and `ProfilePage` plus `Person` JSON-LD on About when a published public resume provides the person's name.
 - Open Graph and Twitter defaults come from site settings. About and Resume pages have their own descriptions and canonical URLs. Record pages keep their per-record metadata and social images.
+- Run `npm run seo:check` after changing metadata, structured data, crawler rules, or sitemap logic. It uses a temporary PGlite database and removes its fixture after the check.
 
 ## Owner checklist
 

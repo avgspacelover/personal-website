@@ -13,7 +13,8 @@
   "export": "tsx scripts/export.ts",
   "backup": "tsx scripts/backup.ts",
   "restore": "tsx scripts/restore.ts",
-  "backup:check": "tsx scripts/backup-cycle.ts"
+  "backup:check": "tsx scripts/backup-cycle.ts",
+  "seo:check": "tsx scripts/seo-check.ts"
  },
  "dependencies": {
   "@electric-sql/pglite": "^0.2.17",

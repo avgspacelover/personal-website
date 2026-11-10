@@ -1,11 +1,12 @@
 import { RichText } from "@/components/RichText";
 import type { Entry } from "@/lib/content";
+import { creativeWorkJsonLd, serializeJsonLd } from "@/lib/seo";
 // The one rendering of a record, used by the public page and by the admin preview so "preview" is exactly what visitors will see.
 export function EntryView({ e, names, canonical }: { e: Entry; names: Map<string, string>; canonical?: string }) {
   const vocName = (s: string) => names.get(s) ?? s;
-  const ld = { "@context": "https://schema.org", "@type": "CreativeWork", name: e.seoTitle || e.title, description: e.seoDescription || e.summary, url: canonical, dateModified: e.updated?.toISOString(), keywords: e.tech.join(", ") };
+  const ld = canonical ? creativeWorkJsonLd(e, canonical) : null;
   return (<article>
-    {canonical && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />}
+    {ld && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(ld) }} />}
     <p className="mono" style={{ marginTop: "2rem" }}>{e.kind === "projects" ? "PROJECT" : "EXPERIENCE"} / {e.slug.toUpperCase()}</p>
     <h1 style={{ marginTop: ".5rem" }}>{e.title}</h1>
     <p className="lede">{e.summary}</p>
