@@ -31,7 +31,7 @@ The site is a **structured personal archive**, not a portfolio template. Profess
 
 **Built and verified:** public site, CMS, rich-text editor, media library, library editors, milestones page, resume builder with two PDF formats, public resume, AI resume agent (offline provider verified; model provider verified against a mock), search, export, SEO, theme system, security hardening, audit log, revision history, draft preview, site settings.
 
-**Not yet done (yours to run, needs credentials or a server):** real Google sign-in on a real domain, a live-API agent run, a VPS dry run, restoring from a backup, and your own visual review.
+**Not yet done (yours to run, needs credentials or a server):** real Google sign-in on a real domain, a live-API agent run, a VPS dry run, and your own visual review. The local backup round-trip runs with `npm run backup:check`; verify Google sign-in manually after a destination restore.
 
 **Not built (optional or deferred):** see section 9.
 
@@ -121,7 +121,8 @@ Five collections: Essays, Books, Movies, Series, Community. Each has an editor w
 | Site settings | Site name, homepage headline and intro, "Currently" block, About page (rich text), default description, optional public contact email, "Elsewhere" links, name and intro of the Accomplishments tab. |
 | Search | `/admin/search` covers everything including drafts and media. |
 | Audit log | `/admin/audit` lists sign-ins (allowed and denied) and every admin change. |
-| Export | JSON download (`/api/admin/export`) or `npm run export -- file.json`; see 6.4. |
+| Backup and restore | Full `.pabackup` from `/admin/backup` or `npm run backup -- file.pabackup`; empty-install restore via `/admin/backup` or `npm run restore -- file.pabackup`. See 6.4. |
+| Content export | Smaller JSON export (`/api/admin/export` or `npm run export -- file.json`) for public/content data; not a restorable backup. |
 
 ---
 
@@ -270,6 +271,9 @@ Statuses on content are `draft`, `published`, `archived`; only `published` is pu
 | `npm run db:seed` | Load placeholder content. **Refuses on a database that already has content unless `--force`, because it deletes content** |
 | `npm run setup` | `db:migrate` + `db:seed` (first run only) |
 | `npm run export -- file.json` | Write the JSON export (cron-friendly) |
+| `npm run backup -- file.pabackup` | Write a compressed, full-fidelity backup (fail if the target file already exists) |
+| `npm run restore -- file.pabackup` | Restore a backup into an empty database and empty local media directory |
+| `npm run backup:check` | Exercise export, damaged archive rejection, restore and verification using isolated PGlite databases |
 
 Node 20.9 or newer is required.
 
@@ -291,7 +295,7 @@ Node 20.9 or newer is required.
 3. **A strong `AUTH_SECRET`, and the allowlist** (`ADMIN_EMAILS`) set exactly.
 4. **Postgres with two roles** (owner for migrations, data-only for the app) as in `DEPLOY.md`.
 5. **A persistent `MEDIA_DIR`** writable by the app user, included in backups.
-6. **Backups, with a tested restore:** the database (`pg_dump`), the media directory, and your `.env`. The JSON export is a portable content copy but **does not contain image files, resumes, agent runs or the audit log**, and there is no import feature.
+6. **Backups:** `/admin/backup` creates one portable compressed archive with all persisted tables and local media. The archive includes agent prompts/proposals, audit history and revisions by default, so store it as sensitive personal data. It never contains `.env`, OAuth credentials or signing keys. Restore only into an empty installation and keep a separate copy of its database and media before restoring. `pg_dump` plus a media-directory copy remains a useful infrastructure-level alternative.
 7. **Never run `db:seed --force` on a live site.** It deletes content. Plain `db:seed` refuses on a non-empty database.
 8. **Replace placeholders:** seeded vocations, projects, library entries, skills, education; the About page; Site settings; contact email (shown only if you set it).
 9. **Run `npm audit --omit=dev`** before each deploy and keep dependencies updated. Auth.js v5 is a beta line, so pin and test upgrades.
@@ -310,8 +314,10 @@ Node 20.9 or newer is required.
 
 ### 6.4 Backups and portability
 
-- **Authoritative backup:** `pg_dump` + the media directory + `.env`.
-- **JSON export** includes vocations, records with their vocation links, library, settings, accomplishments, numbers, media metadata, skills, education and redirects, with rich text as JSON.
+- **Portable full backup:** `/admin/backup` downloads a gzip-compressed `.pabackup` with a manifest, archive and database schema versions, per-file SHA-256 checksums, all 17 application tables, and every media file referenced by metadata (including resized variants). It validates format, checksums and references before restoring, then uses a database transaction and a staged media directory. Restore refuses non-empty data tables or a non-empty media directory; sign-in audit rows created to reach the admin screen are replaced by the archived audit history. Current limits: 160 MiB compressed, 192 MiB expanded, 64 MiB media, and 88 MiB database rows. Larger sites should use the infrastructure backup procedure. The archive is not encrypted; do not store it in the public web root.
+- **Sensitive history is included by default** to make the archive full fidelity: agent prompts/proposals/logs, audit events and record revisions may contain private text. Protect backups like the original database and media. `.env`, OAuth client credentials, `AUTH_SECRET`, database passwords and other deployment secrets are deliberately excluded; configure these separately on the destination. Install the matching application release and run its database migrations before restore.
+- **CLI equivalents:** run `npm run backup -- /secure/path/archive.pabackup` to create an archive and `npm run restore -- /secure/path/archive.pabackup` on a migrated empty target. The admin page offers download and restore in the browser. The previous `npm run export` and `/api/admin/export` remain content-only JSON and are not a full backup.
+- **Restore verification:** `npm run backup:check` creates an isolated populated source, exports it, verifies a damaged archive leaves a clean target untouched, restores the valid archive, compares every table and file, checks public content and renders a resume PDF. It also confirms a second restore is refused. Google sign-in still needs a manual check on the destination with its separately configured OAuth credentials.
 - **Moving media to S3, R2 or another S3-compatible store later** needs no schema or CMS change: implement the three-method `MediaStorage` interface, copy files under the same keys, and optionally set `MEDIA_PUBLIC_BASE`. Steps are in `src/lib/storage/README.md`.
 
 ### 6.5 First-deploy checklist
@@ -335,6 +341,7 @@ Node 20.9 or newer is required.
 - Authentication: anonymous, forged cookie, and non-allowlisted-token cases are refused; revocation by cutoff works.
 - Security: CSP nonce present on all 12 executable scripts of tested pages, rate limits return 429 at the expected counts, field caps, scheme allowlists, upload validation and traversal blocking.
 - Features end to end: CRUD for each content type, redirects, history and restore, preview, SEO tags, search, export, milestones counts, both PDF formats (parsed back for text, fonts, links, column positions), public resume gating, agent grounding with a scripted model, outage fallback and apply/approve rules.
+- Full backup round-trip: every table and media bytes, damaged checksums and invalid database values rejected without partial restore, public content queries, admin allowlist, populated resume PDF, and refusal to restore into a populated target (`npm run backup:check`).
 - A **real browser** (headless Chromium): no console or CSP errors and no horizontal overflow at 375, 768, 1024 and 1440 px; theme toggle and persistence; OS dark mode; keyboard focus rings; mobile menu geometry; the editor (typing, toolbar state, save, public render, reopen). One real bug (the editor's hidden field being reset) was found and fixed this way.
 
 **Not verified**
@@ -343,9 +350,9 @@ Node 20.9 or newer is required.
 - The Anthropic provider against the live API (only a scripted mock).
 - A real VPS deployment with systemd and Caddy.
 - Admin screens at phone width; a full visual review by you; a formal accessibility audit with assistive technology.
-- Restoring from a backup.
+- Real Google sign-in on the restored destination (requires its own OAuth credentials).
 
-**Not in the repo:** an automated test suite and linting. My checks were throwaway scripts, so regressions are currently caught only by manual testing.
+**Not in the repo:** a broad automated test suite or linting. A repeatable full backup/restore verification is provided by `npm run backup:check`; other regressions still need manual testing.
 
 ---
 
@@ -391,7 +398,6 @@ Node 20.9 or newer is required.
 - Privacy-friendly analytics, if you decide you want any.
 - Page transitions and hover reveals; RSS for projects and experience.
 - Side-by-side diff in history; per-session revocation (database-backed sessions).
-- A JSON import (decided not needed for now; the database dump is the real backup).
 - Moving media to object storage and a CDN if you leave a single-server setup.
 - A Netlify-style deployment path (external Postgres, Blobs or S3 driver, smaller upload cap), if you ever want one.
 

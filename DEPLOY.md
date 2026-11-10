@@ -26,6 +26,7 @@ npm ci
 cp .env.example .env          # then fill it in (below)
 MIGRATE_DATABASE_URL=postgres://archive_owner:...@localhost:5432/archive npm run db:migrate   # applies migrations as the OWNER role. For a FIRST run you may also `npm run db:seed` for placeholder content;
                               # never seed an existing site: seeding deletes content (it refuses without --force)
+# To prepare an empty restore target, run db:migrate only; do not seed it.
 npm run build
 ```
 `.env` (production):
@@ -74,18 +75,19 @@ example.com {
 Admin cookies are `Secure` in production, so HTTPS is required. Point your domain's DNS A record at the server first.
 
 ## 6. Backups (do this before you have content you care about)
-Three things hold your site: the database, the media directory, and your `.env`.
+The portable full backup contains all 17 application tables and the local media files. It deliberately excludes `.env`, database passwords, Google OAuth credentials and `AUTH_SECRET`; configure those separately on any restored server. The archive contains sensitive agent and audit text by default and is not encrypted. Current limits are 160 MiB compressed, 192 MiB expanded, 64 MiB of media files, and 88 MiB of database rows; larger sites should use pg_dump plus a copy of the media directory.
 `/usr/local/bin/archive-backup.sh`:
 ```bash
 #!/bin/sh
 set -e
+umask 077
 D=/var/backups/archive/$(date +%F); mkdir -p "$D"
-pg_dump "$DATABASE_URL" -Fc -f "$D/db.dump"
-tar -C /var/lib/archive -czf "$D/media.tgz" media
-cd /srv/archive && npm run -s export -- "$D/content.json"      # portable JSON copy (no media files)
+set -a; . /srv/archive/.env; set +a   # export DATABASE_URL and MEDIA_DIR for the CLI
+cd /srv/archive && npm run -s backup -- "$D/personal-archive.pabackup"
+cp /srv/archive/.env "$D/env.private"   # secret copy: encrypt it before storing or transferring the backup directory
 find /var/backups/archive -maxdepth 1 -mtime +30 -exec rm -rf {} +
 ```
-Cron daily (`0 3 * * *`, with `DATABASE_URL` exported or sourced from `.env`), then copy `/var/backups/archive` OFF the server (rclone, rsync or a second machine). Restore: `pg_restore -d archive --clean db.dump`, untar `media.tgz`.
+Cron daily (`0 3 * * *`), then copy `/var/backups/archive` OFF the server (rclone, rsync or a second machine). Keep the destination archive private. To restore, first configure and migrate an empty destination (run `db:migrate` only; do not run `setup` or seed placeholder rows), then use `/admin/backup` or `npm run restore -- /secure/path/personal-archive.pabackup`. The destination must have an empty application database and an empty local media directory. Restore will refuse to merge data. Afterward, verify Google sign-in with the destination's own OAuth client, inspect public pages and media, and download each resume PDF you rely on.
 
 ## 7. Updating
 ```bash

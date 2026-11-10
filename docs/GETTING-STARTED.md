@@ -63,6 +63,10 @@ The complete current VPS procedure, including the reverse proxy, database roles,
 
 Replace the placeholder records and site settings with your own content. Public pages show only records you publish. The optional Anthropic resume provider sends the job description and relevant record text to Anthropic; leave `ANTHROPIC_API_KEY` unset to use the offline provider.
 
-Back up PostgreSQL, the media directory, and your environment configuration. The JSON export is useful as a content copy but is not a full restore: it does not include media files, resume versions, agent runs, or audit history. Keep backups private because they may contain personal information.
+Use `/admin/backup` to download a portable full backup, or run `npm run backup -- /secure/path/archive.pabackup`. It includes all 17 application tables and local media files, including resume versions, agent runs, audit history, and revisions. Those histories can contain private text, so keep the unencrypted archive private. Current limits are 160 MiB compressed, 192 MiB expanded, 64 MiB of media, and 88 MiB of database rows; use the infrastructure backup for larger sites. It does not include `.env`, OAuth credentials, signing keys, or database passwords; configure those separately on a destination.
+
+Restore only into a migrated installation with an empty database and empty local media directory: use `/admin/backup` or `npm run restore -- /secure/path/archive.pabackup`. Prepare the database with `npm run db:migrate` only; do not run `npm run setup` or seed placeholder rows. Restore refuses to merge or overwrite existing site data. Before changing your restore process, run `npm run backup:check` for an isolated export, damaged-archive, and restore round-trip. After restoring, sign in with your destination Google OAuth settings and inspect public pages, media, and resume PDFs.
+
+The smaller `/api/admin/export` and `npm run export` JSON file remains useful as a content copy, but it is not a restorable backup.
 
 The source code is MIT-licensed. Personal archive data, uploaded media, sample content, branding, and third-party components or assets are excluded; see [LICENSE-NOTICE.md](../LICENSE-NOTICE.md).
